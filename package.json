@@ -1,0 +1,26 @@
+{
+  "name": "release-party",
+  "version": "0.1.0",
+  "description": "GitHub Releases for versioning and management 🎉",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js",
+    "package": "npm run build",
+    "format": "prettier --write src/**/*.ts",
+    "lint": "eslint src",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@octokit/core": "^7.0.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.4",
+    "@typescript-eslint/eslint-plugin": "^8.51.0",
+    "@typescript-eslint/parser": "^8.51.0",
+    "esbuild": "^0.27.2",
+    "eslint": "^9.39.2",
+    "prettier": "^3.7.4",
+    "typescript": "^5.5.3"
+  },
+  "private": true
+}

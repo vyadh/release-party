@@ -10,12 +10,16 @@ Release Party maintains a GitHub draft release for the default or nominated rele
 
 ## Design Goals
 
-- Minimal dependencies.
+- Minimal dependencies, the only direct dependency being [octokit](https://github.com/octokit/octokit.js).
 - Efficient use of GitHub APIs.
 - Transparent operation when running in debug mode.
 - Delegate release notes generation to GitHub and it's templates.
 - Use of conventual commits for PR titles.
 - Version tracker support for auto generated issue links that are not GitHub (turn ids into links). Might not be able to do this if we are delegating to GitHub.
+
+## Requirements.
+
+Node 24+ is required to run this action.
 
 ## Assumptions
 
@@ -41,6 +45,10 @@ Very specifically, assuming a specific branch is being operated on, the action:
    - If no release exists, creates a new draft release with the new version.
 
 Release notes are generated using GitHub's release notes generator. This can be customised by a `.github/release.yaml` file. See [GitHub docs here](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#configuring-automatically-generated-release-notes) for more information.
+
+## Proxy Support
+
+Since Node 24+ supports a proxy natively by is not enabled by default. It cannot be enabled internally to this action, but can be enabled by setting `NODE_USE_ENV_PROXY=1` on the GitHub runner or an environment variable in the workflow that calls the action. See [Node.js docs](https://nodejs.org/api/cli.html#node_use_env_proxy1) for more information.
 
 ## References
 

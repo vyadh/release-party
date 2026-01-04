@@ -6,7 +6,7 @@ Release Party maintains a GitHub draft release for the default or nominated rele
 
 ## Current Status
 
-**This action is under development and non-functional.**
+🚧 This action is under development and non-functional. 🚧
 
 ## Design Goals
 

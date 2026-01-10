@@ -16,7 +16,7 @@ describe("fetchPullRequests", () => {
   it("should handle no pull requests", async () => {
     mockSinglePageResponse(mockGraphQL, [])
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main")
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt)
 
     expect(prs).toHaveLength(0)
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -26,7 +26,7 @@ describe("fetchPullRequests", () => {
     const mockPRs = createPRs(10, 0)
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", 100)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)
 
     expect(prs).toHaveLength(10)
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -38,7 +38,7 @@ describe("fetchPullRequests", () => {
     ]
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", 100)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)
 
     expect(prs).toHaveLength(1)
     expect(prs[0].number).toBe(1)
@@ -51,7 +51,7 @@ describe("fetchPullRequests", () => {
     mockSinglePageResponse(mockGraphQL, page1)
 
     let count = 0
-    for await (const _ of fetchPullRequests(octokit, "test-owner", "test-repo", "main", 100)) {
+    for await (const _ of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)) {
       count++
       if (count === 10) {
         break // Stop early
@@ -67,7 +67,7 @@ describe("fetchPullRequests", () => {
     const page2 = createPRs(20, 30)
     mockPaginatedResponse(mockGraphQL, [page1, page2])
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", 30)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 30)
 
     expect(prs).toHaveLength(50) // 30 + 20 PRs
     expect(mockGraphQL).toHaveBeenCalledTimes(2)
@@ -85,14 +85,14 @@ describe("fetchPullRequests", () => {
     ]
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main")
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt)
 
     expect(prs).toHaveLength(1)
     expect(prs[0]).toEqual({
       title: "Fix bug in feature X",
       number: 42,
       baseRefName: "main",
-      mergedAt: "2026-01-01T12:00:00Z",
+      mergedAt: new Date("2026-01-01T12:00:00Z"),
       oid: "abc123def456"
     })
   })
@@ -102,7 +102,7 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "main"))
+    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt))
         .rejects.toThrow("Rate limit exceeded")
 
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -113,7 +113,7 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "nonexistent-branch"))
+    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "nonexistent-branch", inclusiveMergedAt))
         .rejects.toThrow("Could not resolve to a Ref")
 
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -125,7 +125,7 @@ describe("fetchPullRequests", () => {
     mockPaginatedResponse(mockGraphQL, [page1, page2])
 
     let count = 0
-    for await (const pr of fetchPullRequests(octokit, "test-owner", "test-repo", "main", 100)) {
+    for await (const pr of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)) {
       count++
       expect(pr.number).toBeDefined()
       if (count === 50) {
@@ -135,6 +135,47 @@ describe("fetchPullRequests", () => {
 
     expect(count).toBe(50)
     // Should only have fetched one page since we stopped at 50 PRs
+    expect(mockGraphQL).toHaveBeenCalledTimes(1)
+  })
+
+  it("should include PRs merged at or after mergedAfter date", async () => {
+    const mergedAfter = new Date("2026-01-05T00:00:00Z")
+    const mockPRs = [
+      createPR({ number: 1, title: "PR 1", mergedAt: "2026-01-10T00:00:00Z", oid: "commit_1" }),
+      createPR({ number: 2, title: "PR 2", mergedAt: "2026-01-05T00:00:00Z", oid: "commit_2" }),
+      createPR({ number: 3, title: "PR 3", mergedAt: "2026-01-06T12:00:00Z", oid: "commit_3" }),
+      createPR({ number: 4, title: "PR 5", mergedAt: "2026-01-04T12:00:00Z", oid: "commit_4" })
+    ]
+    mockSinglePageResponse(mockGraphQL, mockPRs)
+
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", mergedAfter)
+
+    expect(prs).toHaveLength(3)
+    expect(prs[0].number).toBe(1)
+    expect(prs[1].number).toBe(2)
+    expect(prs[2].number).toBe(3)
+    expect(mockGraphQL).toHaveBeenCalledTimes(1)
+  })
+
+  it("should stop paging when first PR before mergedAfter date is found", async () => {
+    const mergedAfter = new Date("2026-01-05T00:00:00Z")
+    const page1 = [
+      createPR({ number: 1, title: "PR 1", mergedAt: "2026-01-10T00:00:00Z", oid: "commit_1" }),
+      createPR({ number: 2, title: "PR 2", mergedAt: "2026-01-06T00:00:00Z", oid: "commit_2" }),
+      createPR({ number: 3, title: "PR 3", mergedAt: "2026-01-04T00:00:00Z", oid: "commit_3" }) // Before cutoff
+    ]
+    const page2 = [
+      createPR({ number: 4, title: "PR 4", mergedAt: "2026-01-03T00:00:00Z", oid: "commit_4" })
+    ]
+    mockPaginatedResponse(mockGraphQL, [page1, page2])
+
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", mergedAfter)
+
+    // Should only yield PRs 1 and 2, and stop when PR 3 (before cutoff) is encountered
+    expect(prs).toHaveLength(2)
+    expect(prs[0].number).toBe(1)
+    expect(prs[1].number).toBe(2)
+    // Should only fetch first page since we stopped early
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
   })
 
@@ -168,6 +209,8 @@ function createPR(overrides: Partial<GitHubPR> & { oid?: string } = {}): GitHubP
     ...prOverrides
   }
 }
+
+let inclusiveMergedAt = new Date("2025-01-01");
 
 function createPRs(count: number, startIndex = 0): GitHubPR[] {
   return Array.from({ length: count }, (_, i) => {
@@ -227,10 +270,11 @@ async function collectPullRequests(
     owner: string,
     repo: string,
     branch: string,
+    mergedAfter: Date,
     perPage?: number,
     limit?: number
 ): Promise<PullRequest[]> {
-  return collectAsync(fetchPullRequests(octokit, owner, repo, branch, perPage), limit)
+  return collectAsync(fetchPullRequests(octokit, owner, repo, branch, mergedAfter, perPage), limit)
 }
 
 async function collectAsync<T>(source: AsyncIterable<T>, limit?: number): Promise<T[]> {

@@ -9,7 +9,7 @@ export interface PullRequest {
     title: string
     number: number
     baseRefName: string
-    mergedAt: string
+    mergedAt: Date
     oid: string
 }
 
@@ -30,7 +30,7 @@ export class PullRequests implements AsyncIterable<PullRequest> {
     }
 }
 
-// todo after particular date
+// See: https://docs.github.com/en/graphql/reference/objects#pullrequest
 const pullRequestQuery = `
 query(
   $owner: String!
@@ -74,10 +74,11 @@ export function fetchPullRequests(
     owner: string,
     repo: string,
     baseRefName: string,
+    mergedAfter: Date,
     perPage?: number
 ): PullRequests {
     return new PullRequests(
-        createPullRequestsGenerator(octokit, owner, repo, baseRefName, perPage)
+        createPullRequestsGenerator(octokit, owner, repo, baseRefName, mergedAfter, perPage)
     )
 }
 
@@ -86,6 +87,7 @@ async function* createPullRequestsGenerator(
     owner: string,
     repo: string,
     baseRefName: string,
+    mergedAfter: Date,
     perPage?: number
 ): AsyncGenerator<PullRequest, void, undefined> {
 
@@ -108,10 +110,18 @@ async function* createPullRequestsGenerator(
         const pageInfo = response.repository.pullRequests.pageInfo
 
         for (const pr of pulls) {
-            yield mapPullRequest(pr)
+            let pullRequest = mapPullRequest(pr);
+            if (pullRequest.mergedAt < mergedAfter) {
+                // PRs are ordered by UPDATED_AT DESC. We can infer that all subsequent PRs will have an
+                // updated date same or greater than their merged date. Therefore, we can stop pagination
+                // for PRs merged before our selected merge date.
+                hasNextPage = false
+                break
+            }
+            yield pullRequest
         }
 
-        hasNextPage = pageInfo.hasNextPage
+        hasNextPage = hasNextPage && pageInfo.hasNextPage
         cursor = pageInfo.endCursor
 
         // If no more pages or no commits yielded, stop
@@ -149,7 +159,7 @@ function mapPullRequest(apiPR: PullRequestNode): PullRequest {
         title: apiPR.title,
         number: apiPR.number,
         baseRefName: apiPR.baseRefName,
-        mergedAt: apiPR.mergedAt,
+        mergedAt: new Date(apiPR.mergedAt),
         oid: apiPR.mergeCommit.oid
     }
 }

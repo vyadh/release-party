@@ -14,6 +14,7 @@ export interface Release {
     target_commitish: string
     name: string | null
     body: string | null | undefined
+    publishedAt: string | null
     draft: boolean
     prerelease: boolean
 }
@@ -126,6 +127,7 @@ function mapRelease(releaseData: ReleaseData): Release {
         target_commitish: releaseData.target_commitish,
         name: releaseData.name,
         body: releaseData.body,
+        publishedAt: releaseData.published_at,
         draft: releaseData.draft,
         prerelease: releaseData.prerelease
     }

@@ -1,7 +1,7 @@
 /**
- * A wrapper around an AsyncGenerator that caches yielded values, allowing multiple iterations over
- * the same generator. Each iteration can be partial or complete, and the class will automatically
- * fetch more values from the underlying generator as needed.
+ * A wrapper around an AsyncGenerator or AsyncIterator that caches yielded values, allowing multiple
+ * iterations over the same source. Each iteration can be partial or complete, and the class will
+ * automatically fetch more values from the source as needed.
  *
  * This is useful to avoid re-fetching data from GitHub APIs without complicating the main logic
  * with caching concerns.
@@ -14,7 +14,7 @@
  *   }
  * }
  *
- * const caching = new CachingAsyncGenerator(generateNumbers());
+ * const caching = new CachingAsyncIterable(generateNumbers());
  *
  * // First iteration - fetch some values
  * for await (const num of caching) {
@@ -35,15 +35,13 @@
  * }
  * ```
  */
-export class CachingAsyncGenerator<T> {
+export class CachingAsyncIterable<T> implements AsyncIterable<T>{
     private readonly cache: T[] = []
-    private readonly source: AsyncGenerator<T, void, undefined>
     private sourceExhausted = false
-    private readonly sourceIterator: AsyncIterator<T, void, undefined> | null = null
+    private readonly source: AsyncIterator<T, void, undefined> | null = null
 
-    constructor(source: AsyncGenerator<T, void, undefined>) {
+    constructor(source: AsyncIterator<T, void, undefined>) {
         this.source = source
-        this.sourceIterator = this.source[Symbol.asyncIterator]()
     }
 
     /**
@@ -52,20 +50,20 @@ export class CachingAsyncGenerator<T> {
      * Returns an async iterator that first yields all cached values, then fetches new values from
      * the source generator as needed.
      */
-    async* [Symbol.asyncIterator](): AsyncGenerator<T, void, undefined> {
+    async* [Symbol.asyncIterator](): AsyncIterator<T, void, undefined> {
         // First, yield all cached values
         for (const item of this.cache) {
             yield item
         }
 
         // If source is exhausted, we're done
-        if (this.sourceExhausted || !this.sourceIterator) {
+        if (this.sourceExhausted || !this.source) {
             return
         }
 
         // Fetch and yield new values from the source
         while (!this.sourceExhausted) {
-            const result = await this.sourceIterator.next()
+            const result = await this.source.next()
 
             if (result.done) {
                 this.sourceExhausted = true

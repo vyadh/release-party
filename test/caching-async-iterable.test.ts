@@ -1,7 +1,7 @@
 import {describe, it, expect} from "vitest"
-import {CachingAsyncGenerator} from "../src/caching-async-generator"
+import {CachingAsyncIterable} from "../src/caching-async-iterable"
 
-describe("CachingAsyncGenerator", () => {
+describe("CachingAsyncIterable", () => {
 
     async function* createIncGenerator(count: number): AsyncGenerator<number> {
         for (let i = 0; i < count; i++) {
@@ -30,7 +30,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should allow multiple complete iterations", async () => {
         const generator = createIncGenerator(5)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         const pass1 = await collect(caching)
         expect(pass1).toEqual([0, 1, 2, 3, 4])
@@ -41,7 +41,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should handle partial iterations followed by complete iteration", async () => {
         const generator = createIncGenerator(10)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         const pass1 = await collectSome(caching, 3)
         expect(pass1).toEqual([0, 1, 2])
@@ -65,7 +65,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should handle multiple partial iterations", async () => {
         const generator = createIncGenerator(10)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         // Take 2 items
         const first = await collectSome(caching, 2)
@@ -89,7 +89,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should handle empty generator", async () => {
         const generator = createIncGenerator(0)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         const pass1 = await collect(caching)
         expect(pass1).toEqual([])
@@ -101,7 +101,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should track cached count correctly", async () => {
         const generator = createIncGenerator(5)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         expect(caching.cachedCount).toBe(0)
 
@@ -117,7 +117,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should track exhausted state correctly", async () => {
         const generator = createIncGenerator(3)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         expect(caching.isExhausted).toBe(false)
 
@@ -133,7 +133,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should provide cached values copy via cachedValues", async () => {
         const generator = createIncGenerator(5)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         await collectSome(caching, 3)
 
@@ -158,7 +158,7 @@ describe("CachingAsyncGenerator", () => {
         }
 
         const generator = delayedGenerator()
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         // First iteration waits for delays
         const pass1 = await collect(caching)
@@ -175,7 +175,7 @@ describe("CachingAsyncGenerator", () => {
 
     it("should allow independent concurrent iterations", async () => {
         const generator = createIncGenerator(6)
-        const caching = new CachingAsyncGenerator(generator)
+        const caching = new CachingAsyncIterable(generator)
 
         // First iteration takes 2 items
         const first = await collectSome(caching, 2)
@@ -200,4 +200,3 @@ describe("CachingAsyncGenerator", () => {
         expect(caching.cachedCount).toBe(3)
     })
 })
-

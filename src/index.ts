@@ -2,7 +2,7 @@ import {createOctokit} from "./octokit-factory.js"
 import {fetchPullRequests} from "./pull-requests"
 import {Octokit} from "octokit"
 import {fetchReleases, Release} from "./releases"
-import {CachingAsyncGenerator} from "./caching-async-generator";
+import {CachingAsyncIterable} from "./caching-async-iterable";
 
 await main()
 
@@ -86,7 +86,7 @@ async function showReleases(octokit: Octokit, args: string[]) {
     }
 }
 
-async function findDraftRelease(releases: CachingAsyncGenerator<Release>): Promise<Release | undefined>  {
+async function findDraftRelease(releases: CachingAsyncIterable<Release>): Promise<Release | undefined>  {
     for await (const release of releases) {
         if (release.draft && !release.prerelease) {
             return release

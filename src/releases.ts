@@ -1,5 +1,5 @@
 import { Octokit } from "octokit"
-import {CachingAsyncGenerator} from "./caching-async-generator";
+import {CachingAsyncIterable} from "./caching-async-iterable";
 
 const DEFAULT_PER_PAGE = 30
 
@@ -25,8 +25,8 @@ export function fetchReleases(
     owner: string,
     repo: string,
     perPage?: number
-): CachingAsyncGenerator<Release> {
-  return new CachingAsyncGenerator(createReleasesGenerator(octokit, owner, repo, perPage))
+): CachingAsyncIterable<Release> {
+  return new CachingAsyncIterable(createReleasesGenerator(octokit, owner, repo, perPage))
 }
 
 async function* createReleasesGenerator(

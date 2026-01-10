@@ -60,29 +60,13 @@ async function showReleases(octokit: Octokit, args: string[]) {
     const [owner, repo] = args
 
     try {
-        const releases = fetchReleases(octokit, owner, repo);
-
-        console.log(`Fetching draft releases for ${owner}/${repo}...`)
-        for await (const release of releases) {
-            if (release.draft) {
-                console.log(release)
-            }
-        }
+        const releases = fetchReleases(octokit, owner, repo)
 
         console.log(`Finding latest draft release...`)
-        const draftRelease = await releases.findLastDraft("main")
-        console.log(draftRelease)
-
-        console.log(`Fetching releases for ${owner}/${repo}...`)
-        for await (const release of releases) {
-             if (!release.draft) {
-                console.log(release)
-            }
-        }
+        console.log(await releases.findLastDraft("main"))
 
         console.log(`Fetching latest final releases...`)
-        const lastRelease = await releases.findLast("main")
-        console.log(lastRelease)
+        console.log(await releases.findLast("main"))
     } catch (error) {
         console.error("Error fetching releases:", error)
         process.exit(1)

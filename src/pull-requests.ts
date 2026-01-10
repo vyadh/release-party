@@ -13,6 +13,23 @@ export interface PullRequest {
     oid: string
 }
 
+/**
+ * Represents a collection of GitHub Pull Requests.
+ */
+export class PullRequests implements AsyncIterable<PullRequest> {
+    private readonly source: AsyncIterable<PullRequest>
+
+    constructor(source: AsyncIterable<PullRequest>) {
+        this.source = source
+    }
+
+    async* [Symbol.asyncIterator](): AsyncIterator<PullRequest> {
+        for await (const pr of this.source) {
+            yield pr
+        }
+    }
+}
+
 // todo after particular date
 const pullRequestQuery = `
 query(
@@ -52,7 +69,19 @@ query(
  * Fetch GitHub pull requests using GraphQL API with lazy pagination.
  * Only fetches more pages when needed.
  */
-export async function* fetchPullRequests(
+export function fetchPullRequests(
+    octokit: Octokit,
+    owner: string,
+    repo: string,
+    baseRefName: string,
+    perPage?: number
+): PullRequests {
+    return new PullRequests(
+        createPullRequestsGenerator(octokit, owner, repo, baseRefName, perPage)
+    )
+}
+
+async function* createPullRequestsGenerator(
     octokit: Octokit,
     owner: string,
     repo: string,

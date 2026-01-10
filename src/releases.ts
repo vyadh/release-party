@@ -1,5 +1,5 @@
 import {Octokit} from "octokit"
-import {CachingAsyncIterable} from "./caching-async-iterable";
+import {CachingAsyncIterable} from "./caching-async-iterable"
 
 const DEFAULT_PER_PAGE = 30
 const MAX_PAGES = 5

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { Octokit } from "octokit"
-import {fetchReleases, findRelease} from "../src/releases"
+import {fetchReleases} from "../src/releases"
 import type { Release } from "../src/releases"
 
 describe("fetchReleases", () => {
@@ -110,7 +110,7 @@ describe("fetchReleases", () => {
   })
 })
 
-describe("findRelease", () => {
+describe("find", () => {
   let octokit: Octokit
   let mockRequest: ReturnType<typeof vi.fn>
 
@@ -124,12 +124,8 @@ describe("findRelease", () => {
     const mockReleases = createReleases(10)
     mockSinglePageResponse(mockRequest, mockReleases)
 
-    const release = await findRelease(
-      octokit,
-      "test-owner",
-      "test-repo",
-      (r) => r.tag_name === "v1.5.0"
-    )
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.find((r) => r.tag_name === "v1.5.0")
 
     expect(release).not.toBeNull()
     expect(release?.tag_name).toBe("v1.5.0")
@@ -140,17 +136,103 @@ describe("findRelease", () => {
     const mockReleases = createReleases(10)
     mockSinglePageResponse(mockRequest, mockReleases)
 
-    const release = await findRelease(
-      octokit,
-      "test-owner",
-      "test-repo",
-      (r) => r.tag_name === "v2.0.0"
-    )
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.find((r) => r.tag_name === "v2.0.0")
 
     expect(release).toBeNull()
     expect(mockRequest).toHaveBeenCalledTimes(1)
   })
 })
+
+describe("findLast", () => {
+  let octokit: Octokit
+  let mockRequest: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    const mock = createOctokit()
+    octokit = mock.octokit
+    mockRequest = mock.mockRequest
+  })
+
+  it("should find first non-draft non-prerelease", async () => {
+    mockSinglePageResponse(mockRequest, Array.of(
+        createRelease({ id: 4, name: "v1.0.3", draft: true,  }),
+        createRelease({ id: 3, name: "v1.0.2", prerelease: true }),
+        createRelease({ id: 2, name: "v1.0.1", draft: false, prerelease: false }),
+        createRelease({ id: 1, name: "v1.0.0", draft: false, prerelease: false })
+    ))
+
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.findLast()
+
+    expect(release).not.toBeNull()
+    expect(release?.name).toBe("v1.0.1")
+  })
+
+  it("should return null if no final release found", async () => {
+    mockSinglePageResponse(mockRequest, Array.of(
+        createRelease({ id: 4, name: "v1.0.3", draft: true,  }),
+        createRelease({ id: 3, name: "v1.0.2", prerelease: true })
+    ))
+
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.findLast()
+
+    expect(release).toBeNull()
+    expect(mockRequest).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("findLastDraft", () => {
+  let octokit: Octokit
+  let mockRequest: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    const mock = createOctokit()
+    octokit = mock.octokit
+    mockRequest = mock.mockRequest
+  })
+
+  it("should find first draft non-prerelease", async () => {
+    mockSinglePageResponse(mockRequest, Array.of(
+        createRelease({ id: 4, name: "v1.0.3", draft: true, prerelease: true }),
+        createRelease({ id: 3, name: "v1.0.2", draft: true, prerelease: false }),
+        createRelease({ id: 2, name: "v1.0.1", draft: true })
+    ))
+
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.findLastDraft()
+
+    expect(release).not.toBeNull()
+    expect(release?.name).toBe("v1.0.2")
+  })
+
+  it("should return null and return early on non-draft as draft always first", async () => {
+    mockSinglePageResponse(mockRequest, Array.of(
+        createRelease({ id: 4, name: "v1.0.3", draft: false }),
+        createRelease({ id: 3, name: "v1.0.2", draft: true }) // Should not be reached
+    ))
+
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.findLastDraft()
+
+    expect(release).toBeNull()
+    expect(mockRequest).toHaveBeenCalledTimes(1)
+  })
+
+  it("should return null if no draft release found", async () => {
+    mockSinglePageResponse(mockRequest, Array.of(
+        createRelease({ id: 4, name: "v1.0.3", draft: false,  }),
+    ))
+
+    const releases = fetchReleases(octokit, "test-owner", "test-repo", 30)
+    const release = await releases.findLastDraft()
+
+    expect(release).toBeNull()
+    expect(mockRequest).toHaveBeenCalledTimes(1)
+  })
+})
+
 
 
 interface GitHubRelease {

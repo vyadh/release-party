@@ -1,8 +1,7 @@
 import {createOctokit} from "./octokit-factory.js"
 import {fetchPullRequests} from "./pull-requests"
 import {Octokit} from "octokit"
-import {fetchReleases, Release} from "./releases"
-import {CachingAsyncIterable} from "./caching-async-iterable";
+import {fetchReleases} from "./releases"
 
 await main()
 
@@ -71,29 +70,21 @@ async function showReleases(octokit: Octokit, args: string[]) {
         }
 
         console.log(`Finding latest draft release...`)
-        const draftRelease = await findDraftRelease(releases)
+        const draftRelease = await releases.findLastDraft()
         console.log(draftRelease)
 
-        console.log(`Fetching final releases for ${owner}/${repo}...`)
+        console.log(`Fetching releases for ${owner}/${repo}...`)
         for await (const release of releases) {
              if (!release.draft) {
                 console.log(release)
             }
         }
+
+        console.log(`Fetching latest final releases...`)
+        const lastRelease = await releases.findLast()
+        console.log(lastRelease)
     } catch (error) {
         console.error("Error fetching releases:", error)
         process.exit(1)
     }
-}
-
-async function findDraftRelease(releases: CachingAsyncIterable<Release>): Promise<Release | undefined>  {
-    for await (const release of releases) {
-        if (release.draft && !release.prerelease) {
-            return release
-        } else if (!release.prerelease) {
-            // Draft releases are expected to first so we can stop searching
-            return undefined
-        }
-    }
-    return undefined
 }

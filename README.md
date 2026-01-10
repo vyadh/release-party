@@ -7,13 +7,14 @@ A GitHub Action for release and version management.
 🚧 This action is under development and non-functional. 🚧
 
 
-## Features
+## Features (mostly unimplemented 🚧)
 
 - Maintains a GitHub draft release for the default or nominated (tracked) release branches with GitHub generated release notes.
 - Provides version numbers from pull request titles in conventional commits style for tracked branches.
 - Provides version numbers from branch names for untracked branches, matching against simple patterns inferring fix or feature since the last release on the default branch.
 - Respects an existing version tag against the current commit, overriding the version inference and used for the release tag.
 - Infers non-tracked branches are prerelease versions, populating semver appropriately.
+- Respects last release indicator when operating on the default branch.
 
 
 ## Design Goals

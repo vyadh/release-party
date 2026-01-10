@@ -38,7 +38,7 @@
 export class CachingAsyncIterable<T> implements AsyncIterable<T>{
     private readonly cache: T[] = []
     private sourceExhausted = false
-    private readonly source: AsyncIterator<T, void, undefined> | null = null
+    private readonly source: AsyncIterator<T, void, undefined>
 
     constructor(source: AsyncIterator<T, void, undefined>) {
         this.source = source

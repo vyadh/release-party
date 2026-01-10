@@ -6,7 +6,7 @@ import type { PullRequest } from "../src/pull-requests"
 describe("fetchPullRequests", () => {
   let octokit: Octokit
   let mockGraphQL: ReturnType<typeof vi.fn>
-  const inclusiveMergedAt = new Date("2025-01-01");
+  const inclusiveMergedSince = null
 
   beforeEach(() => {
     const mock = createOctokit()
@@ -17,7 +17,7 @@ describe("fetchPullRequests", () => {
   it("should handle no pull requests", async () => {
     mockSinglePageResponse(mockGraphQL, [])
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince)
 
     expect(prs).toHaveLength(0)
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -27,7 +27,7 @@ describe("fetchPullRequests", () => {
     const mockPRs = createPRs(10, 0)
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)
 
     expect(prs).toHaveLength(10)
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -39,7 +39,7 @@ describe("fetchPullRequests", () => {
     ]
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)
 
     expect(prs).toHaveLength(1)
     expect(prs[0].number).toBe(1)
@@ -52,7 +52,7 @@ describe("fetchPullRequests", () => {
     mockSinglePageResponse(mockGraphQL, page1)
 
     let count = 0
-    for await (const _ of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)) {
+    for await (const _ of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)) {
       count++
       if (count === 10) {
         break // Stop early
@@ -68,7 +68,7 @@ describe("fetchPullRequests", () => {
     const page2 = createPRs(20, 30)
     mockPaginatedResponse(mockGraphQL, [page1, page2])
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 30)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 30)
 
     expect(prs).toHaveLength(50) // 30 + 20 PRs
     expect(mockGraphQL).toHaveBeenCalledTimes(2)
@@ -86,7 +86,7 @@ describe("fetchPullRequests", () => {
     ]
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt)
+    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince)
 
     expect(prs).toHaveLength(1)
     expect(prs[0]).toEqual({
@@ -103,7 +103,7 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt))
+    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince))
         .rejects.toThrow("Rate limit exceeded")
 
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -114,7 +114,7 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "nonexistent-branch", inclusiveMergedAt))
+    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "nonexistent-branch", inclusiveMergedSince))
         .rejects.toThrow("Could not resolve to a Ref")
 
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -126,7 +126,7 @@ describe("fetchPullRequests", () => {
     mockPaginatedResponse(mockGraphQL, [page1, page2])
 
     let count = 0
-    for await (const pr of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedAt, 100)) {
+    for await (const pr of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)) {
       count++
       expect(pr.number).toBeDefined()
       if (count === 50) {
@@ -269,7 +269,7 @@ async function collectPullRequests(
     owner: string,
     repo: string,
     branch: string,
-    mergedSince: Date,
+    mergedSince: Date | null,
     perPage?: number,
     limit?: number
 ): Promise<PullRequest[]> {

@@ -241,6 +241,7 @@ describe("updateRelease", () => {
 
         const callArgs = mockUpdateRelease.mock.calls[0][0]
         expect(callArgs).not.toHaveProperty("published_at")
+        expect(callArgs).not.toHaveProperty("body")
     })
 
     it("should handle API errors gracefully", async () => {

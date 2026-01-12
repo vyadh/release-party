@@ -2,9 +2,7 @@ import { createOctokit } from "./octokit-factory.js"
 import { fetchPullRequests } from "./pull-requests"
 import { Octokit } from "octokit"
 import { fetchReleases } from "./releases"
-import { createDraftRelease, updateRelease } from "./release"
-import { bumpTag, VersionIncrement } from "./versions"
-import { inferImpactFromPRs } from "./version-bump-inference"
+import { upsertDraftRelease } from "./core.js"
 
 await main()
 
@@ -42,54 +40,28 @@ async function main() {
 
 async function simulate(octokit: Octokit, args: string[]) {
   if (args.length < 3) {
-    console.error("Usage: node dist/index.js simulate <owner> <repo> <branch>")
+    console.error("Usage: node dist/index.js simulate <owner> <repo> <branch> [defaultTag]")
     process.exit(1)
   }
-  const [owner, repo, branch] = args
+  const [owner, repo, branch, defaultTag = "v0.1.0"] = args
 
-  const releases = fetchReleases(octokit, owner, repo)
-  const lastDraft = await releases.findLastDraft(branch)
-  const lastRelease = await releases.findLast(branch)
+  console.log(`Simulating draft release for ${owner}/${repo}@${branch}...`)
 
-  console.log(`Draft:`, lastDraft)
-  console.log(`Last Release:`, lastRelease)
+  const result = await upsertDraftRelease(octokit, owner, repo, branch, defaultTag)
 
-  const mergedSince = lastRelease ? lastRelease.publishedAt : null
-  const pulls = fetchPullRequests(octokit, owner, repo, branch, mergedSince)
+  console.log(`\nResult:`)
+  console.log(`  Action: ${result.action}`)
+  console.log(`  Pull Requests: ${result.pullRequestCount}`)
+  console.log(`  Version Increment: ${result.versionIncrement}`)
+  console.log(`  Next Version: ${result.version ?? "N/A"}`)
 
-  console.log("Pull Requests:")
-  const collectedPRs = []
-  for await (const pr of pulls) {
-    console.log(pr)
-    collectedPRs.push(pr)
+  if (result.release) {
+    console.log(`  Release Id: ${result.release.id}`)
+    console.log(`  Release Name: ${result.release.name}`)
   }
 
-  if (collectedPRs.length > 0) {
-    const change: VersionIncrement = inferImpactFromPRs(collectedPRs)
-    const nextTag = bumpTag(lastRelease?.tagName, change, "v0.1.0")
-    const reason = lastRelease ? "last release" : "no prior release"
-
-    if (lastDraft) {
-      const release = await updateRelease(octokit, owner, repo, {
-        ...lastDraft,
-        name: `Draft ${nextTag} (${new Date().toISOString()})`
-      })
-      console.log(`Draft release updated from last draft with ${reason}:`, release)
-    } else {
-      const release = await createDraftRelease(
-        octokit,
-        owner,
-        repo,
-        nextTag,
-        branch,
-        `Draft ${nextTag}`
-      )
-      console.log(`Draft release created from ${reason}:`, release)
-    }
-  } else {
-    console.log(
-      "Since there are no outstanding PRs, a draft release will neither be created nor updated"
-    )
+  if (result.action === "none") {
+    console.log("\nNo outstanding PRs found, so a draft release was neither created nor updated")
   }
 }
 

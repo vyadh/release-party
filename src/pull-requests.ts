@@ -1,4 +1,4 @@
-import {Octokit} from "octokit"
+import { Octokit } from "octokit"
 
 const DEFAULT_PER_PAGE = 30
 
@@ -6,28 +6,33 @@ const DEFAULT_PER_PAGE = 30
  * Represents a GitHub Pull Request with the fields needed for the action
  */
 export interface PullRequest {
-    title: string
-    number: number
-    baseRefName: string
-    mergedAt: Date
-    oid: string
+  title: string
+  number: number
+  baseRefName: string
+  mergedAt: Date
+  oid: string
 }
 
 /**
  * Represents a collection of GitHub Pull Requests.
  */
 export class PullRequests implements AsyncIterable<PullRequest> {
-    private readonly source: AsyncIterable<PullRequest>
+  private readonly source: AsyncIterable<PullRequest>
 
-    constructor(source: AsyncIterable<PullRequest>) {
-        this.source = source
-    }
+  constructor(source: AsyncIterable<PullRequest>) {
+    this.source = source
+  }
 
-    async* [Symbol.asyncIterator](): AsyncIterator<PullRequest> {
-        for await (const pr of this.source) {
-            yield pr
-        }
+  async *[Symbol.asyncIterator](): AsyncIterator<PullRequest> {
+    for await (const pr of this.source) {
+      yield pr
     }
+  }
+
+  // todo not currently using limit
+  async collect(limit?: number): Promise<PullRequest[]> {
+    return collectAsync(this, limit)
+  }
 }
 
 // See: https://docs.github.com/en/graphql/reference/objects#pullrequest
@@ -70,96 +75,107 @@ query(
  * Only fetches more pages when needed.
  */
 export function fetchPullRequests(
-    octokit: Octokit,
-    owner: string,
-    repo: string,
-    baseRefName: string,
-    mergedSince: Date | null,
-    perPage?: number
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  baseRefName: string,
+  mergedSince: Date | null,
+  perPage?: number
 ): PullRequests {
-    return new PullRequests(
-        createPullRequestsGenerator(octokit, owner, repo, baseRefName, mergedSince, perPage)
-    )
+  return new PullRequests(
+    createPullRequestsGenerator(octokit, owner, repo, baseRefName, mergedSince, perPage)
+  )
 }
 
 async function* createPullRequestsGenerator(
-    octokit: Octokit,
-    owner: string,
-    repo: string,
-    baseRefName: string,
-    mergedSince: Date | null,
-    perPage?: number
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  baseRefName: string,
+  mergedSince: Date | null,
+  perPage?: number
 ): AsyncGenerator<PullRequest, void, undefined> {
+  let cursor: string | null = null
+  let hasNextPage = true
 
-    let cursor: string | null = null
-    let hasNextPage = true
+  while (hasNextPage) {
+    const response: PullRequestQueryResponse = await octokit.graphql<PullRequestQueryResponse>(
+      pullRequestQuery,
+      {
+        owner: owner,
+        repo: repo,
+        baseRefName: baseRefName,
+        perPage: perPage ?? DEFAULT_PER_PAGE,
+        cursor
+      }
+    )
 
-    while (hasNextPage) {
-        const response: PullRequestQueryResponse = await octokit.graphql<PullRequestQueryResponse>(
-            pullRequestQuery,
-            {
-                owner: owner,
-                repo: repo,
-                baseRefName: baseRefName,
-                perPage: perPage ?? DEFAULT_PER_PAGE,
-                cursor
-            }
-        )
+    const pulls = response.repository.pullRequests.nodes
+    const pageInfo = response.repository.pullRequests.pageInfo
 
-        const pulls = response.repository.pullRequests.nodes
-        const pageInfo = response.repository.pullRequests.pageInfo
-
-        for (const pr of pulls) {
-            const pullRequest = mapPullRequest(pr)
-            if (mergedSince && pullRequest.mergedAt < mergedSince) {
-                // PRs are ordered by UPDATED_AT DESC. We can infer that all subsequent PRs will have an
-                // updated date same or greater than their merged date. Therefore, we can stop pagination
-                // for PRs merged before our selected merge date.
-                hasNextPage = false
-                break
-            }
-            yield pullRequest
-        }
-
-        hasNextPage = hasNextPage && pageInfo.hasNextPage
-        cursor = pageInfo.endCursor
-
-        // If no more pages or no commits yielded, stop
-        if (!hasNextPage || pulls.length === 0) {
-            break
-        }
+    for (const pr of pulls) {
+      const pullRequest = mapPullRequest(pr)
+      if (mergedSince && pullRequest.mergedAt < mergedSince) {
+        // PRs are ordered by UPDATED_AT DESC. We can infer that all subsequent PRs will have an
+        // updated date same or greater than their merged date. Therefore, we can stop pagination
+        // for PRs merged before our selected merge date.
+        hasNextPage = false
+        break
+      }
+      yield pullRequest
     }
+
+    hasNextPage = hasNextPage && pageInfo.hasNextPage
+    cursor = pageInfo.endCursor
+
+    // If no more pages or no commits yielded, stop
+    if (!hasNextPage || pulls.length === 0) {
+      break
+    }
+  }
 }
 
 interface PullRequestQueryResponse {
-    repository: {
-        pullRequests: {
-            pageInfo: {
-                hasNextPage: boolean
-                endCursor: string | null
-            }
-            nodes: PullRequestNode[]
-        }
+  repository: {
+    pullRequests: {
+      pageInfo: {
+        hasNextPage: boolean
+        endCursor: string | null
+      }
+      nodes: PullRequestNode[]
     }
+  }
 }
 
 interface PullRequestNode {
-    title: string
-    number: number
-    baseRefName: string
-    mergedAt: string
-    mergeCommit: { oid: string }
+  title: string
+  number: number
+  baseRefName: string
+  mergedAt: string
+  mergeCommit: { oid: string }
 }
 
 /**
  * Maps a GitHub GraphQL API pull request response to our PullRequest interface
  */
 function mapPullRequest(apiPR: PullRequestNode): PullRequest {
-    return {
-        title: apiPR.title,
-        number: apiPR.number,
-        baseRefName: apiPR.baseRefName,
-        mergedAt: new Date(apiPR.mergedAt),
-        oid: apiPR.mergeCommit.oid
+  return {
+    title: apiPR.title,
+    number: apiPR.number,
+    baseRefName: apiPR.baseRefName,
+    mergedAt: new Date(apiPR.mergedAt),
+    oid: apiPR.mergeCommit.oid
+  }
+}
+
+async function collectAsync<T>(source: AsyncIterable<T>, limit?: number): Promise<T[]> {
+  const result: T[] = []
+  for await (const item of source) {
+    result.push(item)
+
+    if (limit !== undefined && result.length >= limit) {
+      break
     }
+  }
+  return result
 }

@@ -17,7 +17,13 @@ describe("fetchPullRequests", () => {
   it("should handle no pull requests", async () => {
     mockSinglePageResponse(mockGraphQL, [])
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince)
+    const prs = await collectPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince
+    )
 
     expect(prs).toHaveLength(0)
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
@@ -27,19 +33,31 @@ describe("fetchPullRequests", () => {
     const mockPRs = createPRs(10, 0)
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)
+    const prs = await collectPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince,
+      100
+    )
 
     expect(prs).toHaveLength(10)
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should handle commits with no PRs", async () => {
-    const mockPRs = [
-      createPR({ number: 1, title: "PR 1", oid: "def456" })
-    ]
+    const mockPRs = [createPR({ number: 1, title: "PR 1", oid: "def456" })]
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)
+    const prs = await collectPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince,
+      100
+    )
 
     expect(prs).toHaveLength(1)
     expect(prs[0].number).toBe(1)
@@ -52,7 +70,14 @@ describe("fetchPullRequests", () => {
     mockSinglePageResponse(mockGraphQL, page1)
 
     let count = 0
-    for await (const _ of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)) {
+    for await (const _ of fetchPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince,
+      100
+    )) {
       count++
       if (count === 10) {
         break // Stop early
@@ -68,7 +93,14 @@ describe("fetchPullRequests", () => {
     const page2 = createPRs(20, 30)
     mockPaginatedResponse(mockGraphQL, [page1, page2])
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 30)
+    const prs = await collectPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince,
+      30
+    )
 
     expect(prs).toHaveLength(50) // 30 + 20 PRs
     expect(mockGraphQL).toHaveBeenCalledTimes(2)
@@ -86,7 +118,13 @@ describe("fetchPullRequests", () => {
     ]
     mockSinglePageResponse(mockGraphQL, mockPRs)
 
-    const prs = await collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince)
+    const prs = await collectPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince
+    )
 
     expect(prs).toHaveLength(1)
     expect(prs[0]).toEqual({
@@ -103,8 +141,9 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince))
-        .rejects.toThrow("Rate limit exceeded")
+    await expect(
+      collectPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince)
+    ).rejects.toThrow("Rate limit exceeded")
 
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
   })
@@ -114,8 +153,15 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(octokit, "test-owner", "test-repo", "nonexistent-branch", inclusiveMergedSince))
-        .rejects.toThrow("Could not resolve to a Ref")
+    await expect(
+      collectPullRequests(
+        octokit,
+        "test-owner",
+        "test-repo",
+        "nonexistent-branch",
+        inclusiveMergedSince
+      )
+    ).rejects.toThrow("Could not resolve to a Ref")
 
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
   })
@@ -126,7 +172,14 @@ describe("fetchPullRequests", () => {
     mockPaginatedResponse(mockGraphQL, [page1, page2])
 
     let count = 0
-    for await (const pr of fetchPullRequests(octokit, "test-owner", "test-repo", "main", inclusiveMergedSince, 100)) {
+    for await (const pr of fetchPullRequests(
+      octokit,
+      "test-owner",
+      "test-repo",
+      "main",
+      inclusiveMergedSince,
+      100
+    )) {
       count++
       expect(pr.number).toBeDefined()
       if (count === 50) {
@@ -179,7 +232,6 @@ describe("fetchPullRequests", () => {
     // Should only fetch first page since we stopped early
     expect(mockGraphQL).toHaveBeenCalledTimes(1)
   })
-
 })
 
 // Test helpers
@@ -235,17 +287,11 @@ function createOctokit(): { octokit: Octokit; mockGraphQL: ReturnType<typeof vi.
   return { octokit, mockGraphQL }
 }
 
-function mockSinglePageResponse(
-    mockGraphQL: ReturnType<typeof vi.fn>,
-    data: GitHubPR[]
-): void {
+function mockSinglePageResponse(mockGraphQL: ReturnType<typeof vi.fn>, data: GitHubPR[]): void {
   mockPaginatedResponse(mockGraphQL, [data])
 }
 
-function mockPaginatedResponse(
-    mockGraphQL: ReturnType<typeof vi.fn>,
-    pages: GitHubPR[][]
-): void {
+function mockPaginatedResponse(mockGraphQL: ReturnType<typeof vi.fn>, pages: GitHubPR[][]): void {
   pages.forEach((pageData, index) => {
     const hasNextPage = index < pages.length - 1
     const endCursor = hasNextPage ? `cursor_${index + 1}` : null
@@ -265,26 +311,13 @@ function mockPaginatedResponse(
 }
 
 async function collectPullRequests(
-    octokit: Octokit,
-    owner: string,
-    repo: string,
-    branch: string,
-    mergedSince: Date | null,
-    perPage?: number,
-    limit?: number
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  branch: string,
+  mergedSince: Date | null,
+  perPage?: number,
+  limit?: number
 ): Promise<PullRequest[]> {
-  return collectAsync(fetchPullRequests(octokit, owner, repo, branch, mergedSince, perPage), limit)
+  return fetchPullRequests(octokit, owner, repo, branch, mergedSince, perPage).collect(limit)
 }
-
-async function collectAsync<T>(source: AsyncIterable<T>, limit?: number): Promise<T[]> {
-  const result: T[] = [];
-  for await (const item of source) {
-    result.push(item)
-
-    if (limit !== undefined && result.length >= limit) {
-      break
-    }
-  }
-  return result
-}
-

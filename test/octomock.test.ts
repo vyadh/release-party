@@ -27,8 +27,9 @@ describe("Octomock", () => {
       const releases = await collectReleases(context)
 
       expect(releases).toHaveLength(2)
-      expect(releases[0].tagName).toBe("v1.0.0")
-      expect(releases[1].tagName).toBe("v1.1.0")
+      // Releases are returned newest first (v1.1.0 was added second)
+      expect(releases[0].tagName).toBe("v1.1.0")
+      expect(releases[1].tagName).toBe("v1.0.0")
     })
 
     it("should handle pagination for releases", async () => {
@@ -212,17 +213,19 @@ describe("Octomock", () => {
     })
 
     it("should support finding the last draft release", async () => {
-      octomock.addRelease({
-        tag_name: "v1.0.0",
-        target_commitish: "main",
-        draft: true,
-        name: "Draft Release"
-      })
+      // Add published release first (so it's at the end when using unshift)
       octomock.addRelease({
         tag_name: "v0.9.0",
         target_commitish: "main",
         draft: false,
         name: "Published Release"
+      })
+      // Add draft release second (so it's at the beginning)
+      octomock.addRelease({
+        tag_name: "v1.0.0",
+        target_commitish: "main",
+        draft: true,
+        name: "Draft Release"
       })
 
       const releases = fetchReleases(context)

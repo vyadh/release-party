@@ -145,13 +145,15 @@ export class Octomock {
     })
 
     this.mockCreateRelease.mockImplementation((params: CreateReleaseParams) => {
+      const releaseId = this.nextReleaseId++
+      const shouldPublish = !params.draft
       const newRelease: GitHubRelease = {
-        id: this.nextReleaseId++,
+        id: releaseId,
         tag_name: params.tag_name,
         target_commitish: params.target_commitish,
         name: params.name ?? null,
         body: params.body ?? null,
-        published_at: params.draft ? null : new Date().toISOString(),
+        published_at: shouldPublish ? new Date().toISOString() : null,
         draft: params.draft ?? false,
         prerelease: params.prerelease ?? false
       }
@@ -187,19 +189,28 @@ export class Octomock {
     this.mockUpdateRelease.mockImplementation((params: UpdateReleaseParams) => {
       const releaseIndex = this.releases.findIndex((r) => r.id === params.release_id)
       if (releaseIndex === -1) {
-        return Promise.reject(this.createError({ message: "Release not found", status: 404 }))
+        return Promise.reject(
+          this.createError({
+            message: `Release with ID ${params.release_id} not found`,
+            status: 404
+          })
+        )
       }
 
       const release = this.releases[releaseIndex]
+      const wasPublished = !release.draft
+      const willPublish = params.draft === false
+      const shouldSetPublishDate = !wasPublished && willPublish
+
       const updatedRelease: GitHubRelease = {
         ...release,
         tag_name: params.tag_name ?? release.tag_name,
         target_commitish: params.target_commitish ?? release.target_commitish,
         name: params.name ?? release.name,
+        body: params.body ?? release.body,
         draft: params.draft ?? release.draft,
         prerelease: params.prerelease ?? release.prerelease,
-        published_at:
-          params.draft === false && release.draft ? new Date().toISOString() : release.published_at
+        published_at: shouldSetPublishDate ? new Date().toISOString() : release.published_at
       }
 
       this.releases[releaseIndex] = updatedRelease
@@ -221,19 +232,22 @@ export class Octomock {
    * Add a release to the internal state
    */
   addRelease(overrides: Partial<GitHubRelease> = {}): GitHubRelease {
+    const releaseId = this.nextReleaseId++
+    const shouldPublish = !overrides.draft
     const release: GitHubRelease = {
-      id: this.nextReleaseId++,
-      tag_name: `v1.0.${this.nextReleaseId - 1}`,
+      id: releaseId,
+      tag_name: `v1.0.${releaseId - 1}`,
       target_commitish: "main",
-      name: `Release ${this.nextReleaseId - 1}`,
+      name: `Release ${releaseId - 1}`,
       body: "Release body",
-      published_at: overrides.draft ? null : new Date().toISOString(),
+      published_at: shouldPublish ? new Date().toISOString() : null,
       draft: false,
       prerelease: false,
       ...overrides
     }
 
-    this.releases.push(release)
+    // Add to beginning to match GitHub API behavior (newest first)
+    this.releases.unshift(release)
     return release
   }
 

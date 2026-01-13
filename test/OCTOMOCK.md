@@ -51,6 +51,7 @@ describe("My Test Suite", () => {
 
 ```typescript
 // Add a published release
+// Note: Releases are added to the front (newest first) to match GitHub API behavior
 octomock.addRelease({
   tag_name: "v1.0.0",
   name: "Release 1.0.0",
@@ -58,7 +59,7 @@ octomock.addRelease({
   published_at: "2026-01-01T00:00:00Z"
 })
 
-// Add a draft release
+// Add a draft release (will appear first in the list)
 octomock.addRelease({
   tag_name: "v1.1.0",
   name: "Release 1.1.0",
@@ -178,7 +179,7 @@ Creates a new Octomock instance with a mocked Octokit.
 
 **`addRelease(overrides?: Partial<GitHubRelease>): GitHubRelease`**
 
-Adds a release to internal state. Returns the created release.
+Adds a release to internal state. Releases are added to the beginning of the array (newest first) to match GitHub API behavior. Returns the created release.
 
 **`addPullRequest(overrides?: Partial<GitHubPullRequest>): GitHubPullRequest`**
 

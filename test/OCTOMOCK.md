@@ -108,10 +108,10 @@ Pagination is automatically handled:
 
 ```typescript
 it("should handle pagination", async () => {
-  // Add 50 releases
-  for (let i = 0; i < 50; i++) {
-    octomock.addRelease({ tag_name: `v1.${i}.0` })
-  }
+  // Add 50 releases using the batch method
+  octomock.addReleases(50, (i) => ({ 
+    tag_name: `v1.${i}.0` 
+  }))
 
   const releases = await collectReleases(context, 30) // 30 per page
 
@@ -181,9 +181,39 @@ Creates a new Octomock instance with a mocked Octokit.
 
 Adds a release to internal state. Releases are added to the beginning of the array (newest first) to match GitHub API behavior. Returns the created release.
 
+**`addReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[]`**
+
+Adds multiple releases to internal state. Optionally accepts a function to customize each release based on its 0-based index. Returns an array of created releases.
+
+```typescript
+// Add 10 releases with default values
+octomock.addReleases(10)
+
+// Add 5 releases with custom tag names
+octomock.addReleases(5, (i) => ({
+  tag_name: `v1.${i}.0`,
+  name: `Release ${i}`
+}))
+```
+
 **`addPullRequest(overrides?: Partial<GitHubPullRequest>): GitHubPullRequest`**
 
 Adds a pull request to internal state. Returns the created PR.
+
+**`addPullRequests(count: number, fn?: (index: number) => Partial<GitHubPullRequest>): GitHubPullRequest[]`**
+
+Adds multiple pull requests to internal state. Optionally accepts a function to customize each PR based on its 0-based index. Returns an array of created PRs.
+
+```typescript
+// Add 20 PRs with default values
+octomock.addPullRequests(20)
+
+// Add 5 PRs with custom titles and dates
+octomock.addPullRequests(5, (i) => ({
+  title: `feat: feature ${i}`,
+  mergedAt: `2026-01-${10 + i}T00:00:00Z`
+}))
+```
 
 **`clearReleases(): void`**
 

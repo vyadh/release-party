@@ -252,6 +252,20 @@ export class Octomock {
   }
 
   /**
+   * Add multiple releases to the internal state
+   * @param count Number of releases to add
+   * @param fn Optional function to customize each release based on its index (0-based)
+   */
+  addReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[] {
+    const releases: GitHubRelease[] = []
+    for (let i = 0; i < count; i++) {
+      const overrides = fn ? fn(i) : {}
+      releases.push(this.addRelease(overrides))
+    }
+    return releases
+  }
+
+  /**
    * Add a pull request to the internal state
    */
   addPullRequest(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
@@ -268,6 +282,20 @@ export class Octomock {
 
     this.pullRequests.push(pr)
     return pr
+  }
+
+  /**
+   * Add multiple pull requests to the internal state
+   * @param count Number of pull requests to add
+   * @param fn Optional function to customize each PR based on its index (0-based)
+   */
+  addPullRequests(count: number, fn?: (index: number) => Partial<GitHubPullRequest>): GitHubPullRequest[] {
+    const prs: GitHubPullRequest[] = []
+    for (let i = 0; i < count; i++) {
+      const overrides = fn ? fn(i) : {}
+      prs.push(this.addPullRequest(overrides))
+    }
+    return prs
   }
 
   /**

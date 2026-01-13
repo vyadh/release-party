@@ -27,14 +27,12 @@ describe("fetchPullRequests", () => {
   })
 
   it("should fetch single page of pull requests", async () => {
-    for (let i = 0; i < 10; i++) {
-      octomock.addPullRequest({
-        number: i + 1,
-        title: `PR ${i + 1}`,
-        baseRefName: "main",
-        mergedAt: "2026-01-01T00:00:00Z"
-      })
-    }
+    octomock.addPullRequests(10, (i) => ({
+      number: i + 1,
+      title: `PR ${i + 1}`,
+      baseRefName: "main",
+      mergedAt: "2026-01-01T00:00:00Z"
+    }))
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 100)
 
@@ -54,12 +52,10 @@ describe("fetchPullRequests", () => {
   })
 
   it("should not fetch next page when not enough PRs are consumed", async () => {
-    for (let i = 0; i < 30; i++) {
-      octomock.addPullRequest({
-        number: i + 1,
-        title: `PR ${i + 1}`
-      })
-    }
+    octomock.addPullRequests(30, (i) => ({
+      number: i + 1,
+      title: `PR ${i + 1}`
+    }))
 
     let count = 0
     for await (const _ of fetchPullRequests(context, inclusiveMergedSince, 100)) {
@@ -74,14 +70,12 @@ describe("fetchPullRequests", () => {
   })
 
   it("should fetch next page when all PRs from current page are consumed", async () => {
-    for (let i = 0; i < 50; i++) {
-      octomock.addPullRequest({
-        number: i + 1,
-        title: `PR ${i + 1}`,
-        baseRefName: "main",
-        mergedAt: "2026-01-01T00:00:00Z"
-      })
-    }
+    octomock.addPullRequests(50, (i) => ({
+      number: i + 1,
+      title: `PR ${i + 1}`,
+      baseRefName: "main",
+      mergedAt: "2026-01-01T00:00:00Z"
+    }))
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 30)
 
@@ -135,14 +129,12 @@ describe("fetchPullRequests", () => {
   })
 
   it("should yield PRs lazily", async () => {
-    for (let i = 0; i < 200; i++) {
-      octomock.addPullRequest({
-        number: i + 1,
-        title: `PR ${i + 1}`,
-        baseRefName: "main",
-        mergedAt: "2026-01-01T00:00:00Z"
-      })
-    }
+    octomock.addPullRequests(200, (i) => ({
+      number: i + 1,
+      title: `PR ${i + 1}`,
+      baseRefName: "main",
+      mergedAt: "2026-01-01T00:00:00Z"
+    }))
 
     let count = 0
     for await (const pr of fetchPullRequests(context, inclusiveMergedSince, 100)) {

@@ -260,6 +260,59 @@ describe("Octomock", () => {
     })
   })
 
+  describe("batch operations", () => {
+    it("should add multiple releases with default values", async () => {
+      const releases = octomock.addReleases(5)
+
+      expect(releases).toHaveLength(5)
+      expect(releases[0].id).toBe(1)
+      expect(releases[4].id).toBe(5)
+      
+      const allReleases = await collectReleases(context)
+      expect(allReleases).toHaveLength(5)
+    })
+
+    it("should add multiple releases with custom function", async () => {
+      const releases = octomock.addReleases(3, (i) => ({
+        tag_name: `v2.${i}.0`,
+        name: `Custom Release ${i}`,
+        draft: i === 0 // First one is draft
+      }))
+
+      expect(releases).toHaveLength(3)
+      expect(releases[0].tag_name).toBe("v2.0.0")
+      expect(releases[0].name).toBe("Custom Release 0")
+      expect(releases[0].draft).toBe(true)
+      expect(releases[1].draft).toBe(false)
+      expect(releases[2].tag_name).toBe("v2.2.0")
+    })
+
+    it("should add multiple pull requests with default values", async () => {
+      const prs = octomock.addPullRequests(5)
+
+      expect(prs).toHaveLength(5)
+      expect(prs[0].number).toBe(1)
+      expect(prs[4].number).toBe(5)
+      
+      const allPrs = await collectPullRequests(context, null)
+      expect(allPrs).toHaveLength(5)
+    })
+
+    it("should add multiple pull requests with custom function", async () => {
+      const prs = octomock.addPullRequests(3, (i) => ({
+        number: i + 10,
+        title: `Custom PR ${i}`,
+        mergedAt: `2026-01-${10 + i}T00:00:00Z`
+      }))
+
+      expect(prs).toHaveLength(3)
+      expect(prs[0].number).toBe(10)
+      expect(prs[0].title).toBe("Custom PR 0")
+      expect(prs[1].number).toBe(11)
+      expect(prs[2].mergedAt).toBe("2026-01-12T00:00:00Z")
+    })
+  })
+
   describe("error clearing", () => {
     it("should clear all errors", async () => {
       octomock.injectListReleasesError({ message: "Error" })

@@ -35,7 +35,13 @@ describe("upsertDraftRelease", () => {
     })
 
     it("should not create release even if a published release exists", async () => {
-      octomock.addRelease({ id: 1, name: "v1.0.0", tag_name: "v1.0.0", target_commitish: "main", draft: false })
+      octomock.addRelease({
+        id: 1,
+        name: "v1.0.0",
+        tag_name: "v1.0.0",
+        target_commitish: "main",
+        draft: false
+      })
       // No pull requests
 
       const result = await upsertDraftRelease(context, "v0.1.0")
@@ -442,6 +448,7 @@ describe("upsertDraftRelease", () => {
       })
 
       // Multiple PRs (simulating pagination)
+      //todo this no longer properly simulates pagination
       octomock.addPullRequest({ number: 1, title: "feat: feature 1" })
       octomock.addPullRequest({ number: 2, title: "feat: feature 2" })
       octomock.addPullRequest({ number: 3, title: "fix: fix 1" })

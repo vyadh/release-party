@@ -127,22 +127,22 @@ export class Octomock {
 
     // Mock createRelease
     type CreateReleaseParams = RestEndpointMethodTypes["repos"]["createRelease"]["parameters"]
-    const mockCreateReleaseFunction = vi
+    const mockCreateReleaseFunction = vi.fn().mockImplementation((params: CreateReleaseParams) => {
+      if (this.createReleaseError) {
+        return Promise.reject(this.createError(this.createReleaseError))
+      }
+      return this.mockCreateRelease(params)
+    }) as typeof this.octokit.rest.repos.createRelease
+
+    mockCreateReleaseFunction.endpoint = vi
       .fn()
       .mockImplementation((params: CreateReleaseParams) => {
-        if (this.createReleaseError) {
-          return Promise.reject(this.createError(this.createReleaseError))
+        return {
+          method: "POST",
+          url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases`,
+          headers: { accept: "application/vnd.github+json" }
         }
-        return this.mockCreateRelease(params)
-      }) as typeof this.octokit.rest.repos.createRelease
-
-    mockCreateReleaseFunction.endpoint = vi.fn().mockImplementation((params: CreateReleaseParams) => {
-      return {
-        method: "POST",
-        url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases`,
-        headers: { accept: "application/vnd.github+json" }
-      }
-    })
+      })
 
     this.mockCreateRelease.mockImplementation((params: CreateReleaseParams) => {
       const releaseId = this.nextReleaseId++
@@ -169,22 +169,22 @@ export class Octomock {
 
     // Mock updateRelease
     type UpdateReleaseParams = RestEndpointMethodTypes["repos"]["updateRelease"]["parameters"]
-    const mockUpdateReleaseFunction = vi
+    const mockUpdateReleaseFunction = vi.fn().mockImplementation((params: UpdateReleaseParams) => {
+      if (this.updateReleaseError) {
+        return Promise.reject(this.createError(this.updateReleaseError))
+      }
+      return this.mockUpdateRelease(params)
+    }) as typeof this.octokit.rest.repos.updateRelease
+
+    mockUpdateReleaseFunction.endpoint = vi
       .fn()
       .mockImplementation((params: UpdateReleaseParams) => {
-        if (this.updateReleaseError) {
-          return Promise.reject(this.createError(this.updateReleaseError))
+        return {
+          method: "PATCH",
+          url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases/${params.release_id}`,
+          headers: { accept: "application/vnd.github+json" }
         }
-        return this.mockUpdateRelease(params)
-      }) as typeof this.octokit.rest.repos.updateRelease
-
-    mockUpdateReleaseFunction.endpoint = vi.fn().mockImplementation((params: UpdateReleaseParams) => {
-      return {
-        method: "PATCH",
-        url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases/${params.release_id}`,
-        headers: { accept: "application/vnd.github+json" }
-      }
-    })
+      })
 
     this.mockUpdateRelease.mockImplementation((params: UpdateReleaseParams) => {
       const releaseIndex = this.releases.findIndex((r) => r.id === params.release_id)

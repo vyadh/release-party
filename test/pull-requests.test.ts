@@ -27,12 +27,7 @@ describe("fetchPullRequests", () => {
   })
 
   it("should fetch single page of pull requests", async () => {
-    octomock.addPullRequests(10, (i) => ({
-      number: i + 1,
-      title: `PR ${i + 1}`,
-      baseRefName: "main",
-      mergedAt: "2026-01-01T00:00:00Z"
-    }))
+    octomock.addPullRequests(10)
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 100)
 
@@ -52,10 +47,7 @@ describe("fetchPullRequests", () => {
   })
 
   it("should not fetch next page when not enough PRs are consumed", async () => {
-    octomock.addPullRequests(30, (i) => ({
-      number: i + 1,
-      title: `PR ${i + 1}`
-    }))
+    octomock.addPullRequests(30)
 
     let count = 0
     for await (const _ of fetchPullRequests(context, inclusiveMergedSince, 100)) {
@@ -70,12 +62,8 @@ describe("fetchPullRequests", () => {
   })
 
   it("should fetch next page when all PRs from current page are consumed", async () => {
-    octomock.addPullRequests(50, (i) => ({
-      number: i + 1,
-      title: `PR ${i + 1}`,
-      baseRefName: "main",
-      mergedAt: "2026-01-01T00:00:00Z"
-    }))
+    // todo no longer properly simulates paging
+    octomock.addPullRequests(50)
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 30)
 
@@ -129,12 +117,8 @@ describe("fetchPullRequests", () => {
   })
 
   it("should yield PRs lazily", async () => {
-    octomock.addPullRequests(200, (i) => ({
-      number: i + 1,
-      title: `PR ${i + 1}`,
-      baseRefName: "main",
-      mergedAt: "2026-01-01T00:00:00Z"
-    }))
+    // todo no longer properly simulates paging
+    octomock.addPullRequests(200)
 
     let count = 0
     for await (const pr of fetchPullRequests(context, inclusiveMergedSince, 100)) {
@@ -153,10 +137,30 @@ describe("fetchPullRequests", () => {
   it("should include PRs merged at or after mergedSince date", async () => {
     const mergedSince = new Date("2026-01-05T00:00:00Z")
     // Add in reverse chronological order (newest first) to match GitHub API
-    octomock.addPullRequest({ number: 1, title: "PR 1", mergedAt: "2026-01-10T00:00:00Z", mergeCommit: { oid: "commit_1" } })
-    octomock.addPullRequest({ number: 2, title: "PR 2", mergedAt: "2026-01-05T00:00:00Z", mergeCommit: { oid: "commit_2" } })
-    octomock.addPullRequest({ number: 3, title: "PR 3", mergedAt: "2026-01-06T12:00:00Z", mergeCommit: { oid: "commit_3" } })
-    octomock.addPullRequest({ number: 4, title: "PR 5", mergedAt: "2026-01-04T12:00:00Z", mergeCommit: { oid: "commit_4" } })
+    octomock.addPullRequest({
+      number: 1,
+      title: "PR 1",
+      mergedAt: "2026-01-10T00:00:00Z",
+      mergeCommit: { oid: "commit_1" }
+    })
+    octomock.addPullRequest({
+      number: 2,
+      title: "PR 2",
+      mergedAt: "2026-01-05T00:00:00Z",
+      mergeCommit: { oid: "commit_2" }
+    })
+    octomock.addPullRequest({
+      number: 3,
+      title: "PR 3",
+      mergedAt: "2026-01-06T12:00:00Z",
+      mergeCommit: { oid: "commit_3" }
+    })
+    octomock.addPullRequest({
+      number: 4,
+      title: "PR 5",
+      mergedAt: "2026-01-04T12:00:00Z",
+      mergeCommit: { oid: "commit_4" }
+    })
 
     const prs = await collectPullRequests(context, mergedSince)
 
@@ -169,10 +173,26 @@ describe("fetchPullRequests", () => {
 
   it("should stop paging when first PR before mergedSince date is found", async () => {
     const mergedSince = new Date("2026-01-05T00:00:00Z")
+    //todo no longer properly paging
     // Add in reverse chronological order (newest first)
-    octomock.addPullRequest({ number: 1, title: "PR 1", mergedAt: "2026-01-10T00:00:00Z", mergeCommit: { oid: "commit_1" } })
-    octomock.addPullRequest({ number: 2, title: "PR 2", mergedAt: "2026-01-06T00:00:00Z", mergeCommit: { oid: "commit_2" } })
-    octomock.addPullRequest({ number: 3, title: "PR 3", mergedAt: "2026-01-04T00:00:00Z", mergeCommit: { oid: "commit_3" } }) // Before cutoff
+    octomock.addPullRequest({
+      number: 1,
+      title: "PR 1",
+      mergedAt: "2026-01-10T00:00:00Z",
+      mergeCommit: { oid: "commit_1" }
+    })
+    octomock.addPullRequest({
+      number: 2,
+      title: "PR 2",
+      mergedAt: "2026-01-06T00:00:00Z",
+      mergeCommit: { oid: "commit_2" }
+    })
+    octomock.addPullRequest({
+      number: 3,
+      title: "PR 3",
+      mergedAt: "2026-01-04T00:00:00Z",
+      mergeCommit: { oid: "commit_3" }
+    }) // Before cutoff
 
     const prs = await collectPullRequests(context, mergedSince)
 

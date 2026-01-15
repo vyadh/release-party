@@ -30,12 +30,7 @@ describe("fetchReleases", () => {
   })
 
   it("should not fetch new page when releases are below page count", async () => {
-    octomock.addReleases(10, (i) => ({
-      id: i + 1,
-      tag_name: `v1.${i}.0`,
-      name: `Release ${i}`,
-      body: `Release body ${i}`
-    }))
+    octomock.addReleases(10)
 
     const releases = await collectReleases(context, 30)
 
@@ -44,12 +39,7 @@ describe("fetchReleases", () => {
   })
 
   it("should not fetch next page when not enough releases are consumed", async () => {
-    octomock.addReleases(30, (i) => ({
-      id: i + 1,
-      tag_name: `v1.${i}.0`,
-      name: `Release ${i}`,
-      body: `Release body ${i}`
-    }))
+    octomock.addReleases(30)
 
     let count = 0
     for await (const _ of fetchReleases(context, 30)) {
@@ -64,12 +54,8 @@ describe("fetchReleases", () => {
   })
 
   it("should fetch next page when all releases from current page are consumed", async () => {
-    octomock.addReleases(50, (i) => ({
-      id: i + 1,
-      tag_name: `v1.${i}.0`,
-      name: `Release ${i}`,
-      body: `Release body ${i}`
-    }))
+    // todo no longer simulates paging
+    octomock.addReleases(50)
 
     const releases = await collectReleases(context, 30)
 
@@ -147,10 +133,7 @@ describe("find", () => {
 
   it("should find release on first page", async () => {
     octomock.addReleases(10, (i) => ({
-      id: i + 1,
-      tag_name: `v1.${i}.0`,
-      name: `Release ${i}`,
-      body: `Release body ${i}`
+      tag_name: `v1.${i}.0`
     }))
 
     const releases = fetchReleases(context, 30)
@@ -163,10 +146,7 @@ describe("find", () => {
 
   it("should return null if release not found", async () => {
     octomock.addReleases(10, (i) => ({
-      id: i + 1,
-      tag_name: `v1.${i}.0`,
-      name: `Release ${i}`,
-      body: `Release body ${i}`
+      tag_name: `v1.${i}.0`
     }))
 
     const releases = fetchReleases(context, 30)
@@ -295,18 +275,15 @@ describe("findLast", () => {
   })
 
   it("should not find release beyond MAX_PAGES (5 pages)", async () => {
-    // With perPage=10, maxReleases = 10 * 5 = 50, create 60 releases with last 10 on "main" branch
     // Add in reverse order since unshift puts newest first
-    for (let i = 59; i >= 0; i--) {
-      octomock.addRelease({
-        id: i + 1,
-        tag_name: `v1.${i}.0`,
-        name: `Release ${i}`,
-        target_commitish: i >= 50 ? "main" : "other", // Last 10 (i=50-59) on "main", first 50 on "other"
-        draft: false,
-        prerelease: false
-      })
-    }
+    // A sixth page beyond MAX_PAGES
+    octomock.addReleases(10, (i) => ({
+      target_commitish: "main"
+    }))
+    // With perPage=10, maxReleases = 10 * 5 = 50
+    octomock.addReleases(50, (i) => ({
+      target_commitish: "other"
+    }))
 
     const releases = fetchReleases(context, 10)
     const release = await releases.findLast("main")

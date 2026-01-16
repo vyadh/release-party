@@ -102,7 +102,8 @@ export class Octomock {
     // Mock paginate.iterator for releases
     this.octokit.paginate = {
       iterator: vi.fn().mockImplementation((method: any, params: any) => {
-        // The method parameter is not used since we only support one iterator type
+        // Only paginate.iterator is used by production code (releases.ts)
+        // Direct calls to listReleases are not supported
         return this.createReleasesIterator(params)
       })
     } as any

@@ -59,6 +59,7 @@ export class Octomock {
   readonly mockListReleases: ReturnType<typeof vi.fn>
   readonly mockCreateRelease: ReturnType<typeof vi.fn>
   readonly mockUpdateRelease: ReturnType<typeof vi.fn>
+  private mockListReleasesFunction: any
 
   constructor() {
     this.octokit = new Octokit({ auth: "test-token" })
@@ -79,14 +80,16 @@ export class Octomock {
     this.mockUpdateRelease = vi.fn()
 
     // Mock listReleases with endpoint method for pagination
-    const mockListReleasesFunction: any = vi.fn().mockImplementation((params: any) => {
+    this.mockListReleasesFunction = vi.fn().mockImplementation((params: any) => {
       if (this.listReleasesError) {
+        // Track the call attempt even when erroring for test assertions
+        this.mockListReleases(params)
         return Promise.reject(this.createError(this.listReleasesError))
       }
       return this.mockListReleases(params)
     })
 
-    mockListReleasesFunction.endpoint = vi.fn().mockImplementation((params: any) => {
+    this.mockListReleasesFunction.endpoint = vi.fn().mockImplementation((params: any) => {
       return {
         method: "GET",
         url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases`,
@@ -118,7 +121,7 @@ export class Octomock {
     // Mock paginate.iterator for releases
     this.octokit.paginate = {
       iterator: vi.fn().mockImplementation((method: any, params: any) => {
-        if (method === mockListReleasesFunction) {
+        if (method === this.mockListReleasesFunction) {
           return this.createReleasesIterator(params)
         }
         throw new Error("Unsupported paginate.iterator method")
@@ -223,7 +226,7 @@ export class Octomock {
     })
 
     // Wire up the mocked methods
-    this.octokit.rest.repos.listReleases = mockListReleasesFunction
+    this.octokit.rest.repos.listReleases = this.mockListReleasesFunction
     this.octokit.rest.repos.createRelease = mockCreateReleaseFunction
     this.octokit.rest.repos.updateRelease = mockUpdateReleaseFunction
   }
@@ -357,22 +360,9 @@ export class Octomock {
 
     const generator = async function* () {
       while (true) {
-        // Check for error injection first
-        if (self.listReleasesError) {
-          // Still track the call attempt for test assertions
-          // Note: mockListReleases returns a resolved promise synchronously,
-          // so it's safe to call without awaiting in the error path
-          self.mockListReleases({
-            owner: params.owner,
-            repo: params.repo,
-            per_page: perPage,
-            page
-          })
-          throw self.createError(self.listReleasesError)
-        }
-
-        // Use the actual mockListReleases implementation for pagination
-        const response = await self.mockListReleases({
+        // Use mockListReleasesFunction which includes error injection logic
+        // and internally calls mockListReleases for tracking
+        const response = await self.mockListReleasesFunction({
           owner: params.owner,
           repo: params.repo,
           per_page: perPage,

@@ -85,7 +85,7 @@ describe("fetchReleases", () => {
   })
 
   it("should map releases appropriately", async () => {
-    // Add published release first (appears second due to unshift)
+    // Add published release first
     octomock.addRelease({
       id: 2,
       tag_name: "v1.1.0",
@@ -94,7 +94,8 @@ describe("fetchReleases", () => {
       published_at: "2026-01-01T12:13:14.000Z",
       draft: false
     })
-    // Add draft release second (appears first due to unshift)
+    // Add draft release second
+    // With sorting, draft will appear first in results
     octomock.addRelease({
       id: 1,
       tag_name: "v1.0.0",
@@ -106,14 +107,17 @@ describe("fetchReleases", () => {
     const releases = await collectReleases(context)
 
     expect(releases).toHaveLength(2)
+    // Draft should appear first
     expect(releases[0].id).toBe(1)
     expect(releases[0].tagName).toBeNull() // Draft should have null tag_name
-    expect(releases[0].draft).toBe(false)
-    expect(releases[0].publishedAt).toStrictEqual(new Date("2026-01-01T12:13:14.000Z"))
+    expect(releases[0].draft).toBe(true)
+    expect(releases[0].publishedAt).toBeNull()
 
+    // Published should appear second
     expect(releases[1].id).toBe(2)
     expect(releases[1].tagName).toBe("v1.1.0") // Published should have tag_name
-    expect(releases[1].draft).toBe(true)
+    expect(releases[1].draft).toBe(false)
+    expect(releases[1].publishedAt).toStrictEqual(new Date("2026-01-01T12:13:14.000Z"))
   })
 })
 
@@ -145,7 +149,8 @@ describe("find", () => {
 
     expect(release).not.toBeNull()
     expect(release?.tagName).toBe("v1.5.0")
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    // With sorting by ID descending, v1.5.0 (ID=6) is on page 2
+    expect(octomock.mockListReleases).toHaveBeenCalledTimes(2)
   })
 
   it("should return null if release not found", async () => {
@@ -353,12 +358,17 @@ describe("findLastDraft", () => {
   })
 
   it("should return null and return early on non-draft as draft always first", async () => {
-    octomock.addRelease({ id: 3, name: "v1.0.2", target_commitish: "main", draft: true }) // Should not be reached
+    // With proper sorting, drafts always appear first
+    // Add a draft for "other" branch, then a non-draft for "main"
+    octomock.addRelease({ id: 3, name: "v1.0.2", target_commitish: "other", draft: true })
     octomock.addRelease({ id: 4, name: "v1.0.3", target_commitish: "main", draft: false })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLastDraft("main")
 
+    // Should return null because:
+    // 1. First release is draft but for "other" branch (doesn't match)
+    // 2. Second release is non-draft, so we stop searching (drafts come first)
     expect(release).toBeNull()
     expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
   })

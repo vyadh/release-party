@@ -22,20 +22,32 @@ update-command command:
 
 
 [group("ci")]
-build: test
+build: lint test
     npm run build
 
 [group("ci")]
-test:
+lint:
     npm run type-check
     npm run lint
+
+[group("ci")]
+test: lint
     npm run test
 
 [group("ci")]
-test-workflow:
+test-workflows: test-workflow-build test-workflow-lint
+
+[group("ci")]
+test-workflow-build:
     act \
       --platform ubuntu-latest=node:24-bullseye-slim \
       --job build
+
+[group("ci")]
+test-workflow-lint:
+    act \
+      --platform ubuntu-latest=node:24-bullseye-slim \
+      --job lint
 
 
 [group("proxy")]

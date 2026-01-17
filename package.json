@@ -9,7 +9,7 @@
     "package": "npm run build",
     "format": "biome check --write",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src && biome ci",
+    "lint": "biome check",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -24,7 +24,6 @@
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
     "esbuild": "^0.27.2",
-    "eslint": "^9.39.2",
     "npm-check-updates": "^19.3.0",
     "proxy": "^2.2.0",
     "typescript": "^5.9.3",

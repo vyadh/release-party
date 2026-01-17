@@ -29,6 +29,7 @@ build: lint test
 lint:
     npm run type-check
     npm run lint
+    actionlint --verbose
 
 [group("ci")]
 test: lint

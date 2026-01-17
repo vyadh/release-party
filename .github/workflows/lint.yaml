@@ -33,3 +33,11 @@ jobs:
 
       - name: Lint
         run: npm run lint-ci
+
+      - name: Action Lint
+        uses: reviewdog/action-actionlint@a5524e1c19e62881d79c1f1b9b6f09f16356e281 # v1.65.2
+        with:
+          # Different options are required to run in ACT
+          reporter: ${{ (env.ACT != '') && 'local' || 'github-pr-check' }}
+          filter_mode: ${{ (env.ACT != '') && 'nofilter' || 'file' }}
+          actionlint_flags: ${{ (env.ACT != '') && '--verbose' || '' }}

@@ -38,6 +38,38 @@ export interface ErrorConfig {
 }
 
 /**
+ * Parameters expected for the simplified GraphQL pullRequests query handled by Octomock
+ */
+interface GraphQLPullRequestsParams {
+  perPage?: number
+  cursor?: string | null
+}
+
+/**
+ * Shape of the simplified GraphQL response returned by Octomock for pullRequests
+ */
+interface GraphQLPullRequestsResponse {
+  repository: {
+    pullRequests: {
+      nodes: GitHubPullRequest[]
+      pageInfo: {
+        hasNextPage: boolean
+        endCursor: string | null
+      }
+    }
+  }
+}
+
+/**
+ * Page shape returned by the mocked REST paginate.iterator for releases
+ */
+interface ReleasesPage {
+  data: GitHubRelease[]
+  status: number
+  headers: Record<string, unknown>
+}
+
+/**
  * Octomock provides a simplified way to mock Octokit for testing.
  * It maintains internal state for releases and pull requests, and automatically
  * wires the mock to respond correctly to REST and GraphQL API calls.
@@ -55,7 +87,7 @@ export class Octomock {
   private graphQlError: ErrorConfig | null = null
 
   readonly octokit: Octokit
-  readonly graphQL: ReturnType<typeof vi.fn>
+  readonly graphQL: ReturnType<typeof vi.fn> & Octokit["graphql"]
   readonly listReleases: ReturnType<typeof vi.fn>
   readonly createRelease: ReturnType<typeof vi.fn>
   readonly updateRelease: ReturnType<typeof vi.fn>
@@ -65,13 +97,13 @@ export class Octomock {
 
     // Setup GraphQL mock
     this.graphQL = vi.fn()
-    this.graphQL.mockImplementation((query: string, params: any) => {
+    this.graphQL.mockImplementation((query: string, params: GraphQLPullRequestsParams) => {
       if (this.graphQlError) {
         return Promise.reject(this.createError(this.graphQlError))
       }
       return this.handleGraphQLQuery(query, params)
     })
-    this.octokit.graphql = this.graphQL as any
+    this.octokit.graphql = this.graphQL
 
     // Setup REST API mocks
     this.listReleases = vi.fn()
@@ -79,17 +111,14 @@ export class Octomock {
     this.updateRelease = vi.fn()
 
     // Mock paginate.iterator for releases
+    type ListReleasesParams = RestEndpointMethodTypes["repos"]["listReleases"]["parameters"]
     this.octokit.paginate = {
-      iterator: vi
-        .fn()
-        .mockImplementation(
-          (_: any, params: RestEndpointMethodTypes["repos"]["listReleases"]["parameters"]) => {
-            // Only paginate.iterator is used by production code (releases.ts)
-            // Direct calls to listReleases are not supported
-            return this.createReleasesIterator(params)
-          }
-        )
-    } as any
+      iterator: vi.fn().mockImplementation((_: unknown, params: ListReleasesParams) => {
+        // Only paginate.iterator is used by production code (releases.ts)
+        // Direct calls to listReleases are not supported
+        return this.createReleasesIterator(params)
+      })
+    }
 
     // Mock createRelease
     type CreateReleaseParams = RestEndpointMethodTypes["repos"]["createRelease"]["parameters"]
@@ -320,7 +349,7 @@ export class Octomock {
 
   private createReleasesIterator(
     params: RestEndpointMethodTypes["repos"]["listReleases"]["parameters"]
-  ): AsyncIterableIterator<any> {
+  ): AsyncIterableIterator<ReleasesPage> {
     const self = this
     const perPage = params.per_page ?? 30
     let page = 1
@@ -369,10 +398,13 @@ export class Octomock {
       }
     }
 
-    return generator() as AsyncIterableIterator<any>
+    return generator() as AsyncIterableIterator<ReleasesPage>
   }
 
-  private handleGraphQLQuery(query: string, params: any): Promise<any> {
+  private handleGraphQLQuery(
+    query: string,
+    params: GraphQLPullRequestsParams
+  ): Promise<GraphQLPullRequestsResponse> {
     // Handle pull requests query
     if (query.includes("pullRequests")) {
       return this.handlePullRequestsQuery(params)
@@ -381,7 +413,7 @@ export class Octomock {
     return Promise.reject(new Error(`Unsupported GraphQL query: ${query}`))
   }
 
-  private handlePullRequestsQuery(params: any): Promise<any> {
+  private handlePullRequestsQuery(params: GraphQLPullRequestsParams): Promise<GraphQLPullRequestsResponse> {
     const perPage = params.perPage ?? 30
     const cursor = params.cursor
 

@@ -1,6 +1,6 @@
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 import { Octokit } from "octokit"
 import { vi } from "vitest"
-import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 
 /**
  * GitHub Release structure matching GitHub API
@@ -101,15 +101,13 @@ export class Octomock {
       return this.createRelease(params)
     }) as typeof this.octokit.rest.repos.createRelease
 
-    mockCreateReleaseFunction.endpoint = vi
-      .fn()
-      .mockImplementation((params: CreateReleaseParams) => {
-        return {
-          method: "POST",
-          url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases`,
-          headers: { accept: "application/vnd.github+json" }
-        }
-      })
+    mockCreateReleaseFunction.endpoint = vi.fn().mockImplementation((params: CreateReleaseParams) => {
+      return {
+        method: "POST",
+        url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases`,
+        headers: { accept: "application/vnd.github+json" }
+      }
+    })
 
     this.createRelease.mockImplementation((params: CreateReleaseParams) => {
       const releaseId = this.nextReleaseId++
@@ -144,15 +142,13 @@ export class Octomock {
       return this.updateRelease(params)
     }) as typeof this.octokit.rest.repos.updateRelease
 
-    mockUpdateReleaseFunction.endpoint = vi
-      .fn()
-      .mockImplementation((params: UpdateReleaseParams) => {
-        return {
-          method: "PATCH",
-          url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases/${params.release_id}`,
-          headers: { accept: "application/vnd.github+json" }
-        }
-      })
+    mockUpdateReleaseFunction.endpoint = vi.fn().mockImplementation((params: UpdateReleaseParams) => {
+      return {
+        method: "PATCH",
+        url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases/${params.release_id}`,
+        headers: { accept: "application/vnd.github+json" }
+      }
+    })
 
     this.updateRelease.mockImplementation((params: UpdateReleaseParams) => {
       const releaseIndex = this.releases.findIndex((r) => r.id === params.release_id)
@@ -254,10 +250,7 @@ export class Octomock {
    * @param count Number of pull requests to add
    * @param fn Optional function to customize each PR based on its index (0-based)
    */
-  stagePullRequests(
-    count: number,
-    fn?: (index: number) => Partial<GitHubPullRequest>
-  ): GitHubPullRequest[] {
+  stagePullRequests(count: number, fn?: (index: number) => Partial<GitHubPullRequest>): GitHubPullRequest[] {
     const prs: GitHubPullRequest[] = []
     for (let i = 0; i < count; i++) {
       const overrides = fn ? fn(i) : {}

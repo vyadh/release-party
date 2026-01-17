@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest"
-import { Octomock } from "./octomock"
-import { Context } from "../src/context"
-import { fetchReleases } from "../src/releases"
+import { beforeEach, describe, expect, it } from "vitest"
+import type { Context } from "../src/context"
 import { fetchPullRequests } from "../src/pull-requests"
 import { createDraftRelease, updateRelease } from "../src/release"
+import { fetchReleases } from "../src/releases"
+import { Octomock } from "./octomock"
 
 describe("Octomock", () => {
   let octomock: Octomock
@@ -49,9 +49,9 @@ describe("Octomock", () => {
     })
 
     it("releases should be in normal GitHub order", async () => {
-      let day1 = "2026-01-01T00:00:00Z"
-      let day2 = "2026-01-03T00:00:00Z"
-      let day3 = "2026-01-02T00:00:00Z"
+      const day1 = "2026-01-01T00:00:00Z"
+      const day2 = "2026-01-03T00:00:00Z"
+      const day3 = "2026-01-02T00:00:00Z"
       octomock.stageRelease({ id: 0, name: "v0", draft: false, published_at: day1 })
       octomock.stageRelease({ id: 2, name: "v2", draft: false, published_at: day2 })
       octomock.stageRelease({ id: 5, name: "v5", draft: true })
@@ -124,9 +124,7 @@ describe("Octomock", () => {
         status: 401
       })
 
-      await expect(createDraftRelease(context, "v1.0.0", "main", "Test")).rejects.toThrow(
-        "Bad credentials"
-      )
+      await expect(createDraftRelease(context, "v1.0.0", "main", "Test")).rejects.toThrow("Bad credentials")
     })
 
     it("should inject updateRelease error", async () => {

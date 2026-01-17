@@ -1,7 +1,7 @@
-import { Context } from "./context.js"
-import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 import { CachingAsyncIterable } from "./caching-async-iterable"
-import { Release } from "./release"
+import type { Context } from "./context.js"
+import type { Release } from "./release"
 
 const DEFAULT_PER_PAGE = 30
 const MAX_PAGES = 5
@@ -42,8 +42,7 @@ export class Releases implements AsyncIterable<Release> {
 
   async findLast(targetCommitish: string): Promise<Release | null> {
     return this.find(
-      (release) =>
-        !release.draft && !release.prerelease && release.targetCommitish === targetCommitish
+      (release) => !release.draft && !release.prerelease && release.targetCommitish === targetCommitish
     )
   }
 
@@ -74,16 +73,10 @@ export class Releases implements AsyncIterable<Release> {
 export function fetchReleases(context: Context, perPage?: number): Releases {
   const maxReleases = (perPage ?? DEFAULT_PER_PAGE) * MAX_PAGES
 
-  return new Releases(
-    new CachingAsyncIterable(createReleasesGenerator(context, perPage)),
-    maxReleases
-  )
+  return new Releases(new CachingAsyncIterable(createReleasesGenerator(context, perPage)), maxReleases)
 }
 
-async function* createReleasesGenerator(
-  context: Context,
-  perPage?: number
-): AsyncGenerator<Release> {
+async function* createReleasesGenerator(context: Context, perPage?: number): AsyncGenerator<Release> {
   const iterator = context.octokit.paginate.iterator(context.octokit.rest.repos.listReleases, {
     owner: context.owner,
     repo: context.repo,

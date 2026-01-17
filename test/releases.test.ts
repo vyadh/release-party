@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest"
-
-import { fetchReleases } from "../src/releases"
+import { beforeEach, describe, expect, it } from "vitest"
+import type { Context } from "../src/context"
 import type { Release } from "../src/release"
-import { Context } from "../src/context"
+import { fetchReleases } from "../src/releases"
 import { Octomock } from "./octomock"
 
 describe("fetchReleases", () => {
@@ -315,20 +314,8 @@ describe("findLastDraft", () => {
 
   it("should find first draft non-prerelease for the same commitish", async () => {
     // Releases are automatically sorted by id descending
-    octomock.stageRelease({
-      id: 1,
-      name: "v1.0.1",
-      target_commitish: "main",
-      draft: true,
-      prerelease: false
-    })
-    octomock.stageRelease({
-      id: 2,
-      name: "v1.0.2",
-      target_commitish: "main",
-      draft: true,
-      prerelease: false
-    })
+    octomock.stageRelease({ id: 1, name: "v1.0.1", target_commitish: "main", draft: true, prerelease: false })
+    octomock.stageRelease({ id: 2, name: "v1.0.2", target_commitish: "main", draft: true, prerelease: false })
     octomock.stageRelease({
       id: 3,
       name: "v1.0.3",
@@ -336,13 +323,7 @@ describe("findLastDraft", () => {
       draft: true,
       prerelease: false
     })
-    octomock.stageRelease({
-      id: 4,
-      name: "v1.0.4",
-      target_commitish: "main",
-      draft: true,
-      prerelease: true
-    })
+    octomock.stageRelease({ id: 4, name: "v1.0.4", target_commitish: "main", draft: true, prerelease: true })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLastDraft("main")
@@ -379,11 +360,7 @@ describe("findLastDraft", () => {
   })
 })
 
-export async function collectReleases(
-  context: Context,
-  perPage?: number,
-  limit?: number
-): Promise<Release[]> {
+async function collectReleases(context: Context, perPage?: number, limit?: number): Promise<Release[]> {
   return collectAsync(fetchReleases(context, perPage), limit)
 }
 

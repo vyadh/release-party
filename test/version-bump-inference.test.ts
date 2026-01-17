@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
+import type { PullRequest } from "../src/pull-requests"
 import { inferImpactFromPRs } from "../src/version-bump-inference"
-import { PullRequest } from "../src/pull-requests"
 
 function createPR(number: number, title: string): PullRequest {
   return {

@@ -35,59 +35,58 @@
  * }
  * ```
  */
-export class CachingAsyncIterable<T> implements AsyncIterable<T>{
-    private readonly cache: T[] = []
-    private sourceExhausted = false
-    private readonly source: AsyncIterator<T, void, undefined>
+export class CachingAsyncIterable<T> implements AsyncIterable<T> {
+  private readonly cache: T[] = []
+  private sourceExhausted = false
+  private readonly source: AsyncIterator<T, void, undefined>
 
-    constructor(source: AsyncIterator<T, void, undefined>) {
-        this.source = source
+  constructor(source: AsyncIterator<T, void, undefined>) {
+    this.source = source
+  }
+
+  /**
+   * Iterate over the cached and new values.
+   *
+   * Returns an async iterator that first yields all cached values, then fetches new values from
+   * the source generator as needed.
+   */
+  async *[Symbol.asyncIterator](): AsyncIterator<T, void, undefined> {
+    // First, yield all cached values
+    for (const item of this.cache) {
+      yield item
     }
 
-    /**
-     * Iterate over the cached and new values.
-     *
-     * Returns an async iterator that first yields all cached values, then fetches new values from
-     * the source generator as needed.
-     */
-    async* [Symbol.asyncIterator](): AsyncIterator<T, void, undefined> {
-        // First, yield all cached values
-        for (const item of this.cache) {
-            yield item
-        }
-
-        // If source is exhausted, we're done
-        if (this.sourceExhausted || !this.source) {
-            return
-        }
-
-        // Fetch and yield new values from the source
-        while (!this.sourceExhausted) {
-            const result = await this.source.next()
-
-            if (result.done) {
-                this.sourceExhausted = true
-                return
-            }
-
-            // Cache the value
-            this.cache.push(result.value)
-
-            // Yield the value
-            yield result.value
-        }
+    // If source is exhausted, we're done
+    if (this.sourceExhausted || !this.source) {
+      return
     }
 
-    get isExhausted(): boolean {
-        return this.sourceExhausted
-    }
+    // Fetch and yield new values from the source
+    while (!this.sourceExhausted) {
+      const result = await this.source.next()
 
-    get cachedCount(): number {
-        return this.cache.length
-    }
+      if (result.done) {
+        this.sourceExhausted = true
+        return
+      }
 
-    get cachedValues(): T[] {
-        return [...this.cache]
-    }
+      // Cache the value
+      this.cache.push(result.value)
 
+      // Yield the value
+      yield result.value
+    }
+  }
+
+  get isExhausted(): boolean {
+    return this.sourceExhausted
+  }
+
+  get cachedCount(): number {
+    return this.cache.length
+  }
+
+  get cachedValues(): T[] {
+    return [...this.cache]
+  }
 }

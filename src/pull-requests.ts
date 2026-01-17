@@ -1,4 +1,4 @@
-import { Context } from "./context.js"
+import type { Context } from "./context.js"
 
 const DEFAULT_PER_PAGE = 30
 
@@ -91,14 +91,16 @@ async function* createPullRequestsGenerator(
   let hasNextPage = true
 
   while (hasNextPage) {
-    const response: PullRequestQueryResponse =
-      await context.octokit.graphql<PullRequestQueryResponse>(pullRequestQuery, {
+    const response: PullRequestQueryResponse = await context.octokit.graphql<PullRequestQueryResponse>(
+      pullRequestQuery,
+      {
         owner: context.owner,
         repo: context.repo,
         baseRefName: context.branch,
         perPage: perPage ?? DEFAULT_PER_PAGE,
         cursor
-      })
+      }
+    )
 
     const pulls = response.repository.pullRequests.nodes
     const pageInfo = response.repository.pullRequests.pageInfo

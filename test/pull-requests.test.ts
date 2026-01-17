@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest"
-import { Context } from "../src/context"
-import { fetchPullRequests } from "../src/pull-requests"
+import { beforeEach, describe, expect, it } from "vitest"
+import type { Context } from "../src/context"
 import type { PullRequest } from "../src/pull-requests"
+import { fetchPullRequests } from "../src/pull-requests"
 import { Octomock } from "./octomock"
 
 describe("fetchPullRequests", () => {
@@ -96,9 +96,7 @@ describe("fetchPullRequests", () => {
 
     // Should throw before yielding any PRs
     // noinspection ES6RedundantAwait
-    await expect(collectPullRequests(context, inclusiveMergedSince)).rejects.toThrow(
-      "Rate limit exceeded"
-    )
+    await expect(collectPullRequests(context, inclusiveMergedSince)).rejects.toThrow("Rate limit exceeded")
 
     expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })

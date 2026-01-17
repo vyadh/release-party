@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest"
-import { messageImpact, maxImpact } from "../src/conventional-commits"
-import { VersionIncrement } from "../src/versions"
+import { describe, expect, it } from "vitest"
+import { maxImpact, messageImpact } from "../src/conventional-commits"
+import type { VersionIncrement } from "../src/versions"
 
 describe("messageImpact", () => {
   describe("MAJOR impact (breaking changes)", () => {

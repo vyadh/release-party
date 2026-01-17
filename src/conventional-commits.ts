@@ -1,4 +1,4 @@
-import { VersionIncrement } from "./versions"
+import type { VersionIncrement } from "./versions"
 
 /**
  * Parses a conventional commit message and reads its impact level.

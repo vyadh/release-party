@@ -1,4 +1,4 @@
-import { Octokit } from "octokit"
+import type { Octokit } from "octokit"
 
 export interface Context {
   octokit: Octokit

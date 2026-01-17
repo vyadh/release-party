@@ -1,9 +1,9 @@
+import type { Octokit } from "octokit"
+import type { Context } from "./context.js"
+import { upsertDraftRelease } from "./core.js"
 import { createOctokit } from "./octokit-factory.js"
 import { fetchPullRequests } from "./pull-requests"
-import { Octokit } from "octokit"
-import { Context } from "./context.js"
 import { fetchReleases } from "./releases"
-import { upsertDraftRelease } from "./core.js"
 
 await main()
 
@@ -98,9 +98,7 @@ async function showPullRequests(octokit: Octokit, args: string[]) {
   const mergedSince = new Date(mergedSinceString)
 
   try {
-    console.log(
-      `Fetching pull requests for ${owner}/${repo}@${branch} after ${mergedSince.toISOString()}...`
-    )
+    console.log(`Fetching pull requests for ${owner}/${repo}@${branch} after ${mergedSince.toISOString()}...`)
     const context: Context = { octokit, owner, repo, branch }
     for await (const pr of fetchPullRequests(context, mergedSince)) {
       console.log(pr)

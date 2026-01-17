@@ -1,5 +1,5 @@
-import { Context } from "./context.js"
-import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
+import type { Context } from "./context.js"
 
 /**
  * Represents a GitHub Release with the fields needed for the action

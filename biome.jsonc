@@ -10,7 +10,7 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "lineEnding": "lf",
-    "lineWidth": 100,
+    "lineWidth": 110,
     "attributePosition": "auto",
     "bracketSpacing": true,
     "expand": "auto",
@@ -25,6 +25,13 @@
       "attributePosition": "auto",
       "bracketSpacing": true
     },
-    "globals": ["exports"]
+    "globals": [
+      "exports"
+    ]
+  },
+  "json": {
+    "formatter": {
+      "expand": "always"
+    }
   }
 }

@@ -51,16 +51,18 @@ describe("My Test Suite", () => {
 
 ```typescript
 // Add a published release
-// Note: Releases are added to the front (newest first) to match GitHub API behavior
-octomock.addRelease({
+// Note: Releases are appended in the order added; they will be sorted
+// automatically in GitHub display order when queried
+octomock.stageRelease({
   tag_name: "v1.0.0",
   name: "Release 1.0.0",
   draft: false,
   published_at: "2026-01-01T00:00:00Z"
 })
 
-// Add a draft release (will appear first in the list)
-octomock.addRelease({
+// Add a draft release
+// Drafts will appear first when queried, sorted by id
+octomock.stageRelease({
   tag_name: "v1.1.0",
   name: "Release 1.1.0",
   draft: true,
@@ -68,7 +70,7 @@ octomock.addRelease({
 })
 
 // Add a pull request
-octomock.addPullRequest({
+octomock.stagePullRequest({
   number: 123,
   title: "feat: add new feature",
   baseRefName: "main",
@@ -80,8 +82,8 @@ octomock.addPullRequest({
 
 ```typescript
 it("should list releases", async () => {
-  octomock.addRelease({ tag_name: "v1.0.0" })
-  octomock.addRelease({ tag_name: "v1.1.0" })
+  octomock.stageRelease({ tag_name: "v1.0.0" })
+  octomock.stageRelease({ tag_name: "v1.1.0" })
 
   const releases = await collectReleases(context)
   
@@ -109,14 +111,14 @@ Pagination is automatically handled:
 ```typescript
 it("should handle pagination", async () => {
   // Add 50 releases using the batch method
-  octomock.addReleases(50, (i) => ({ 
+  octomock.stageReleases(50, (i) => ({ 
     tag_name: `v1.${i}.0` 
   }))
 
   const releases = await collectReleases(context, 30) // 30 per page
 
   expect(releases).toHaveLength(50)
-  expect(octomock.mockListReleases).toHaveBeenCalledTimes(2) // 2 pages
+  expect(octomock.listReleases).toHaveBeenCalledTimes(2) // 2 pages
 })
 ```
 
@@ -168,60 +170,52 @@ Creates a new Octomock instance with a mocked Octokit.
 ### Properties
 
 - `octokit: Octokit` - The mocked Octokit instance to use in your context
-- `mockGraphQL` - Vitest mock function for GraphQL calls
-- `mockListReleases` - Vitest mock function for listReleases
-- `mockCreateRelease` - Vitest mock function for createRelease
-- `mockUpdateRelease` - Vitest mock function for updateRelease
+- `graphQL` - Vitest mock function for GraphQL calls
+- `listReleases` - Vitest mock function for listReleases
+- `createRelease` - Vitest mock function for createRelease
+- `updateRelease` - Vitest mock function for updateRelease
 
 ### Methods
 
 #### Data Management
 
-**`addRelease(overrides?: Partial<GitHubRelease>): GitHubRelease`**
+**`stageRelease(overrides?: Partial<GitHubRelease>): GitHubRelease`**
 
-Adds a release to internal state. Releases are added to the beginning of the array (newest first) to match GitHub API behavior. Returns the created release.
+Adds a release to internal state. Releases are appended in the order they are added and automatically sorted in GitHub display order (drafts first, then published releases by reverse publish date) when queried. Returns the created release.
 
-**`addReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[]`**
+**`stageReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[]`**
 
 Adds multiple releases to internal state. Optionally accepts a function to customize each release based on its 0-based index. Returns an array of created releases.
 
 ```typescript
 // Add 10 releases with default values
-octomock.addReleases(10)
+octomock.stageReleases(10)
 
 // Add 5 releases with custom tag names
-octomock.addReleases(5, (i) => ({
+octomock.stageReleases(5, (i) => ({
   tag_name: `v1.${i}.0`,
   name: `Release ${i}`
 }))
 ```
 
-**`addPullRequest(overrides?: Partial<GitHubPullRequest>): GitHubPullRequest`**
+**`stagePullRequest(overrides?: Partial<GitHubPullRequest>): GitHubPullRequest`**
 
 Adds a pull request to internal state. Returns the created PR.
 
-**`addPullRequests(count: number, fn?: (index: number) => Partial<GitHubPullRequest>): GitHubPullRequest[]`**
+**`stagePullRequests(count: number, fn?: (index: number) => Partial<GitHubPullRequest>): GitHubPullRequest[]`**
 
 Adds multiple pull requests to internal state. Optionally accepts a function to customize each PR based on its 0-based index. Returns an array of created PRs.
 
 ```typescript
 // Add 20 PRs with default values
-octomock.addPullRequests(20)
+octomock.stagePullRequests(20)
 
 // Add 5 PRs with custom titles and dates
-octomock.addPullRequests(5, (i) => ({
+octomock.stagePullRequests(5, (i) => ({
   title: `feat: feature ${i}`,
   mergedAt: `2026-01-${10 + i}T00:00:00Z`
 }))
 ```
-
-**`clearReleases(): void`**
-
-Removes all releases from internal state.
-
-**`clearPullRequests(): void`**
-
-Removes all pull requests from internal state.
 
 #### Error Injection
 
@@ -240,10 +234,6 @@ Injects an error for the next updateRelease call.
 **`injectGraphQLError(error: ErrorConfig): void`**
 
 Injects an error for the next GraphQL call.
-
-**`clearErrors(): void`**
-
-Clears all error injections.
 
 ### Types
 
@@ -351,8 +341,8 @@ function mockSinglePageResponse(mockRequest: ReturnType<typeof vi.fn>, data: Git
 
 ```typescript
 const octomock = new Octomock()
-octomock.addRelease({ tag_name: "v1.0.0" })
-octomock.addRelease({ tag_name: "v1.1.0" })
+octomock.stageRelease({ tag_name: "v1.0.0" })
+octomock.stageRelease({ tag_name: "v1.1.0" })
 
 // That's it! No manual mocking needed.
 ```

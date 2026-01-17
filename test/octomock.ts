@@ -8,7 +8,7 @@ import { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 export interface GitHubRelease {
   id: number
   tag_name: string
-  target_commitish: string
+  target_commitish: string | undefined
   name: string | null
   body: string | null
   published_at: string | null
@@ -52,77 +52,43 @@ export class Octomock {
   private listReleasesError: ErrorConfig | null = null
   private createReleaseError: ErrorConfig | null = null
   private updateReleaseError: ErrorConfig | null = null
-  private graphqlError: ErrorConfig | null = null
+  private graphQlError: ErrorConfig | null = null
 
   readonly octokit: Octokit
-  readonly mockGraphQL: ReturnType<typeof vi.fn>
-  readonly mockListReleases: ReturnType<typeof vi.fn>
-  readonly mockCreateRelease: ReturnType<typeof vi.fn>
-  readonly mockUpdateRelease: ReturnType<typeof vi.fn>
+  readonly graphQL: ReturnType<typeof vi.fn>
+  readonly listReleases: ReturnType<typeof vi.fn>
+  readonly createRelease: ReturnType<typeof vi.fn>
+  readonly updateRelease: ReturnType<typeof vi.fn>
 
   constructor() {
     this.octokit = new Octokit({ auth: "test-token" })
 
     // Setup GraphQL mock
-    this.mockGraphQL = vi.fn()
-    this.mockGraphQL.mockImplementation((query: string, params: any) => {
-      if (this.graphqlError) {
-        return Promise.reject(this.createError(this.graphqlError))
+    this.graphQL = vi.fn()
+    this.graphQL.mockImplementation((query: string, params: any) => {
+      if (this.graphQlError) {
+        return Promise.reject(this.createError(this.graphQlError))
       }
       return this.handleGraphQLQuery(query, params)
     })
-    this.octokit.graphql = this.mockGraphQL as any
+    this.octokit.graphql = this.graphQL as any
 
     // Setup REST API mocks
-    this.mockListReleases = vi.fn()
-    this.mockCreateRelease = vi.fn()
-    this.mockUpdateRelease = vi.fn()
-
-    // Mock listReleases with endpoint method for pagination
-    const mockListReleasesFunction: any = vi.fn().mockImplementation((params: any) => {
-      if (this.listReleasesError) {
-        return Promise.reject(this.createError(this.listReleasesError))
-      }
-      return this.mockListReleases(params)
-    })
-
-    mockListReleasesFunction.endpoint = vi.fn().mockImplementation((params: any) => {
-      return {
-        method: "GET",
-        url: `https://api.github.com/repos/${params.owner}/${params.repo}/releases`,
-        headers: { accept: "application/vnd.github+json" }
-      }
-    })
-
-    // Setup listReleases to return paginated data
-    this.mockListReleases.mockImplementation((params: any) => {
-      const perPage = params.per_page ?? 30
-      const page = params.page ?? 1
-
-      const startIndex = (page - 1) * perPage
-      const endIndex = startIndex + perPage
-      const pageData = this.releases.slice(startIndex, endIndex)
-
-      const hasNextPage = endIndex < this.releases.length
-      const linkHeader = hasNextPage
-        ? `<https://api.github.com/repositories/123/releases?page=${page + 1}>; rel="next"`
-        : undefined
-
-      return Promise.resolve({
-        data: pageData,
-        status: 200,
-        headers: linkHeader ? { link: linkHeader } : {}
-      })
-    })
+    this.listReleases = vi.fn()
+    this.createRelease = vi.fn()
+    this.updateRelease = vi.fn()
 
     // Mock paginate.iterator for releases
     this.octokit.paginate = {
-      iterator: vi.fn().mockImplementation((method: any, params: any) => {
-        if (method === mockListReleasesFunction) {
-          return this.createReleasesIterator(params)
-        }
-        throw new Error("Unsupported paginate.iterator method")
-      })
+      iterator: vi
+        .fn()
+        .mockImplementation(
+          (_: any, params: RestEndpointMethodTypes["repos"]["listReleases"]["parameters"]) => {
+            // Only paginate.iterator is used by production code (releases.ts)
+            // Direct calls to listReleases are not supported
+            return this.createReleasesIterator(params)
+          }
+        )
     } as any
 
     // Mock createRelease
@@ -131,7 +97,8 @@ export class Octomock {
       if (this.createReleaseError) {
         return Promise.reject(this.createError(this.createReleaseError))
       }
-      return this.mockCreateRelease(params)
+      // @ts-expect-error IntelliJ bug? This is not a constructor
+      return this.createRelease(params)
     }) as typeof this.octokit.rest.repos.createRelease
 
     mockCreateReleaseFunction.endpoint = vi
@@ -144,7 +111,7 @@ export class Octomock {
         }
       })
 
-    this.mockCreateRelease.mockImplementation((params: CreateReleaseParams) => {
+    this.createRelease.mockImplementation((params: CreateReleaseParams) => {
       const releaseId = this.nextReleaseId++
       const shouldPublish = !params.draft
       const newRelease: GitHubRelease = {
@@ -158,7 +125,7 @@ export class Octomock {
         prerelease: params.prerelease ?? false
       }
 
-      this.releases.unshift(newRelease)
+      this.releases.push(newRelease)
 
       return Promise.resolve({
         data: newRelease,
@@ -173,7 +140,8 @@ export class Octomock {
       if (this.updateReleaseError) {
         return Promise.reject(this.createError(this.updateReleaseError))
       }
-      return this.mockUpdateRelease(params)
+      // @ts-expect-error IntelliJ bug? This is not a constructor
+      return this.updateRelease(params)
     }) as typeof this.octokit.rest.repos.updateRelease
 
     mockUpdateReleaseFunction.endpoint = vi
@@ -186,12 +154,12 @@ export class Octomock {
         }
       })
 
-    this.mockUpdateRelease.mockImplementation((params: UpdateReleaseParams) => {
+    this.updateRelease.mockImplementation((params: UpdateReleaseParams) => {
       const releaseIndex = this.releases.findIndex((r) => r.id === params.release_id)
       if (releaseIndex === -1) {
         return Promise.reject(
           this.createError({
-            message: `Release with ID ${params.release_id} not found`,
+            message: `Release with id ${params.release_id} not found`,
             status: 404
           })
         )
@@ -223,7 +191,6 @@ export class Octomock {
     })
 
     // Wire up the mocked methods
-    this.octokit.rest.repos.listReleases = mockListReleasesFunction
     this.octokit.rest.repos.createRelease = mockCreateReleaseFunction
     this.octokit.rest.repos.updateRelease = mockUpdateReleaseFunction
   }
@@ -231,7 +198,7 @@ export class Octomock {
   /**
    * Add a release to the internal state
    */
-  addRelease(overrides: Partial<GitHubRelease> = {}): GitHubRelease {
+  stageRelease(overrides: Partial<GitHubRelease> = {}): GitHubRelease {
     const releaseId = this.nextReleaseId++
     const shouldPublish = !overrides.draft
     const release: GitHubRelease = {
@@ -245,9 +212,7 @@ export class Octomock {
       prerelease: false,
       ...overrides
     }
-
-    // Add to beginning to match GitHub API behavior (newest first)
-    this.releases.unshift(release)
+    this.releases.push(release)
     return release
   }
 
@@ -256,11 +221,11 @@ export class Octomock {
    * @param count Number of releases to add
    * @param fn Optional function to customize each release based on its index (0-based)
    */
-  addReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[] {
+  stageReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[] {
     const releases: GitHubRelease[] = []
     for (let i = 0; i < count; i++) {
       const overrides = fn ? fn(i) : {}
-      releases.push(this.addRelease(overrides))
+      releases.push(this.stageRelease(overrides))
     }
     return releases
   }
@@ -268,7 +233,7 @@ export class Octomock {
   /**
    * Add a pull request to the internal state
    */
-  addPullRequest(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
+  stagePullRequest(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
     const pr: GitHubPullRequest = {
       title: `PR ${this.nextPullRequestNumber}`,
       number: this.nextPullRequestNumber++,
@@ -289,27 +254,16 @@ export class Octomock {
    * @param count Number of pull requests to add
    * @param fn Optional function to customize each PR based on its index (0-based)
    */
-  addPullRequests(count: number, fn?: (index: number) => Partial<GitHubPullRequest>): GitHubPullRequest[] {
+  stagePullRequests(
+    count: number,
+    fn?: (index: number) => Partial<GitHubPullRequest>
+  ): GitHubPullRequest[] {
     const prs: GitHubPullRequest[] = []
     for (let i = 0; i < count; i++) {
       const overrides = fn ? fn(i) : {}
-      prs.push(this.addPullRequest(overrides))
+      prs.push(this.stagePullRequest(overrides))
     }
     return prs
-  }
-
-  /**
-   * Clear all releases
-   */
-  clearReleases(): void {
-    this.releases = []
-  }
-
-  /**
-   * Clear all pull requests
-   */
-  clearPullRequests(): void {
-    this.pullRequests = []
   }
 
   /**
@@ -337,46 +291,76 @@ export class Octomock {
    * Inject an error for the next GraphQL call
    */
   injectGraphQLError(error: ErrorConfig): void {
-    this.graphqlError = error
+    this.graphQlError = error
   }
 
   /**
-   * Clear all error injections
+   * Sort releases in GitHub display order:
+   * 1. Drafts first (sorted by id - most recent/highest id first)
+   * 2. Then published releases (sorted by published_at - most recent first)
+   *    If published_at is the same or not set, fall back to id descending
    */
-  clearErrors(): void {
-    this.listReleasesError = null
-    this.createReleaseError = null
-    this.updateReleaseError = null
-    this.graphqlError = null
+  private sortReleasesInGitHubOrder(releases: GitHubRelease[]): GitHubRelease[] {
+    return [...releases].sort((a, b) => {
+      // Drafts come before published releases
+      if (a.draft && !b.draft) return -1
+      if (!a.draft && b.draft) return 1
+
+      // Both are drafts or both are published
+      if (a.draft && b.draft) {
+        // Sort drafts by id descending (most recent first)
+        return b.id - a.id
+      }
+
+      // Both are published - sort by published_at (descending - most recent first)
+      const aPublishedAt = a.published_at ? new Date(a.published_at).getTime() : 0
+      const bPublishedAt = b.published_at ? new Date(b.published_at).getTime() : 0
+
+      if (aPublishedAt !== bPublishedAt) {
+        return bPublishedAt - aPublishedAt
+      }
+
+      // If published_at is the same (or both null), fall back to id descending
+      return b.id - a.id
+    })
   }
 
-  private createReleasesIterator(params: any): AsyncIterableIterator<any> {
+  private createReleasesIterator(
+    params: RestEndpointMethodTypes["repos"]["listReleases"]["parameters"]
+  ): AsyncIterableIterator<any> {
     const self = this
     const perPage = params.per_page ?? 30
     let page = 1
 
     const generator = async function* () {
+      // Sort releases in GitHub display order once at the start
+      const sortedReleases = self.sortReleasesInGitHubOrder(self.releases)
+
       while (true) {
-        // Track that we're calling listReleases (before checking anything)
-        self.mockListReleases({
+        // Track the call attempt for test assertions
+        // @ts-expect-error IntelliJ bug? This is not a constructor
+        self.listReleases({
           owner: params.owner,
           repo: params.repo,
           per_page: perPage,
           page
         })
 
-        // Check for error injection first
+        // Check for error injection
         if (self.listReleasesError) {
           throw self.createError(self.listReleasesError)
         }
 
+        // Pagination logic
         const startIndex = (page - 1) * perPage
         const endIndex = startIndex + perPage
-        const pageData = self.releases.slice(startIndex, endIndex)
+        const pageData = sortedReleases.slice(startIndex, endIndex)
 
         if (pageData.length === 0) {
           break
         }
+
+        const hasNextPage = endIndex < sortedReleases.length
 
         yield {
           data: pageData,
@@ -384,7 +368,7 @@ export class Octomock {
           headers: {}
         }
 
-        if (endIndex >= self.releases.length) {
+        if (!hasNextPage) {
           break
         }
 

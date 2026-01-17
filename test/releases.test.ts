@@ -26,20 +26,20 @@ describe("fetchReleases", () => {
     const releases = await collectReleases(context)
 
     expect(releases).toHaveLength(0)
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should not fetch new page when releases are below page count", async () => {
-    octomock.addReleases(10)
+    octomock.stageReleases(10)
 
     const releases = await collectReleases(context, 30)
 
     expect(releases).toHaveLength(10)
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should not fetch next page when not enough releases are consumed", async () => {
-    octomock.addReleases(30)
+    octomock.stageReleases(30)
 
     let count = 0
     for await (const _ of fetchReleases(context, 30)) {
@@ -50,18 +50,18 @@ describe("fetchReleases", () => {
     }
 
     expect(count).toBe(10)
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should fetch next page when all releases from current page are consumed", async () => {
-    octomock.addReleases(50)
+    octomock.stageReleases(50)
 
     const releases = await collectReleases(context, 30)
 
     expect(releases).toHaveLength(50)
     // todo the mock naming of these methods seems redundant now
     // todo maybe have it on the data adding methods instead
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(2)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(2)
   })
 
   it("should handle rate limiting error", async () => {
@@ -71,7 +71,7 @@ describe("fetchReleases", () => {
     // noinspection ES6RedundantAwait
     await expect(collectReleases(context)).rejects.toThrow("API rate limit exceeded")
 
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should handle authentication failure", async () => {
@@ -81,11 +81,11 @@ describe("fetchReleases", () => {
     // noinspection ES6RedundantAwait
     await expect(collectReleases(context)).rejects.toThrow("Bad credentials")
 
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should map releases appropriately", async () => {
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 2,
       tag_name: "v1.1.0",
       name: "Published Release",
@@ -93,7 +93,7 @@ describe("fetchReleases", () => {
       published_at: "2026-01-01T12:13:14.000Z",
       draft: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 1,
       tag_name: "v1.0.0",
       name: "Draft Release",
@@ -138,7 +138,7 @@ describe("find", () => {
   // todo maybe that's better in the octomock tests though
 
   it("should find release on first page", async () => {
-    octomock.addReleases(30, (i) => ({
+    octomock.stageReleases(30, (i) => ({
       tag_name: `v1.${i}.0`
     }))
 
@@ -148,11 +148,11 @@ describe("find", () => {
     expect(release).not.toBeNull()
     expect(release?.tagName).toBe("v1.5.0")
     // With sorting, v1.5.0 (id=6) is on page 2
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(2)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(2)
   })
 
   it("should return null if release not found", async () => {
-    octomock.addReleases(10, (i) => ({
+    octomock.stageReleases(10, (i) => ({
       tag_name: `v1.${i}.0`
     }))
 
@@ -160,7 +160,7 @@ describe("find", () => {
     const release = await releases.find((r) => r.tagName === "v2.0.0")
 
     expect(release).toBeNull()
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -180,19 +180,19 @@ describe("findLast", () => {
   })
 
   it("should return null if no final release found", async () => {
-    octomock.addRelease({ id: 3, name: "v1.0.2", target_commitish: "main", prerelease: true })
-    octomock.addRelease({ id: 4, name: "v1.0.3", target_commitish: "main", draft: true })
+    octomock.stageRelease({ id: 3, name: "v1.0.2", target_commitish: "main", prerelease: true })
+    octomock.stageRelease({ id: 4, name: "v1.0.3", target_commitish: "main", draft: true })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLast("main")
 
     expect(release).toBeNull()
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should find first non-draft non-prerelease with matching commitish", async () => {
     // Releases are automatically sorted by id descending
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 0,
       name: "v1.0.0",
       tag_name: "v1.0.0",
@@ -200,7 +200,7 @@ describe("findLast", () => {
       draft: false,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 1,
       name: "v1.0.1",
       tag_name: "v1.0.1",
@@ -208,7 +208,7 @@ describe("findLast", () => {
       draft: false,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 2,
       name: "v1.0.2",
       tag_name: "v1.0.2",
@@ -216,8 +216,8 @@ describe("findLast", () => {
       draft: false,
       prerelease: false
     })
-    octomock.addRelease({ id: 3, name: "v1.0.3", target_commitish: "main", prerelease: true })
-    octomock.addRelease({ id: 4, name: "v1.0.4", target_commitish: "main", draft: true })
+    octomock.stageRelease({ id: 3, name: "v1.0.3", target_commitish: "main", prerelease: true })
+    octomock.stageRelease({ id: 4, name: "v1.0.4", target_commitish: "main", draft: true })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLast("main")
@@ -228,7 +228,7 @@ describe("findLast", () => {
   })
 
   it("should return null if no release matches commitish", async () => {
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 1,
       name: "v1.0.0",
       tag_name: "v1.0.0",
@@ -236,7 +236,7 @@ describe("findLast", () => {
       draft: false,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 2,
       name: "v1.0.1",
       tag_name: "v1.0.1",
@@ -249,12 +249,12 @@ describe("findLast", () => {
     const release = await releases.findLast("develop")
 
     expect(release).toBeNull()
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should skip drafts and prereleases when filtering by commitish", async () => {
     // Releases are automatically sorted by id descending
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 1,
       name: "v1.0.1",
       tag_name: "v1.0.1",
@@ -262,7 +262,7 @@ describe("findLast", () => {
       draft: false,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 2,
       name: "v1.0.2",
       tag_name: "v1.0.2",
@@ -270,8 +270,8 @@ describe("findLast", () => {
       draft: false,
       prerelease: false
     })
-    octomock.addRelease({ id: 3, name: "v1.0.3", target_commitish: "main", prerelease: true })
-    octomock.addRelease({ id: 4, name: "v1.0.4", target_commitish: "main", draft: true })
+    octomock.stageRelease({ id: 3, name: "v1.0.3", target_commitish: "main", prerelease: true })
+    octomock.stageRelease({ id: 4, name: "v1.0.4", target_commitish: "main", draft: true })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLast("main")
@@ -284,12 +284,12 @@ describe("findLast", () => {
   it("should not find release beyond MAX_PAGES (5 pages)", async () => {
     // Releases are automatically sorted by id descending
     // Add releases with "main" commitish (will have lower id)
-    octomock.addReleases(10, (_) => ({
+    octomock.stageReleases(10, (_) => ({
       target_commitish: "main"
     }))
     // Add releases with "other" commitish (will have higher id, appear first)
     // With perPage=10, maxReleases = 10 * 5 = 50
-    octomock.addReleases(50, (_) => ({
+    octomock.stageReleases(50, (_) => ({
       target_commitish: "other"
     }))
 
@@ -299,7 +299,7 @@ describe("findLast", () => {
     // Should return null because the matching release is beyond maximum releases
     expect(release).toBeNull()
     // Should have stopped after 5 pages
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(5)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(5)
   })
 })
 
@@ -320,28 +320,28 @@ describe("findLastDraft", () => {
 
   it("should find first draft non-prerelease for the same commitish", async () => {
     // Releases are automatically sorted by id descending
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 1,
       name: "v1.0.1",
       target_commitish: "main",
       draft: true,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 2,
       name: "v1.0.2",
       target_commitish: "main",
       draft: true,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 3,
       name: "v1.0.3",
       target_commitish: "other",
       draft: true,
       prerelease: false
     })
-    octomock.addRelease({
+    octomock.stageRelease({
       id: 4,
       name: "v1.0.4",
       target_commitish: "main",
@@ -359,8 +359,8 @@ describe("findLastDraft", () => {
   it("should return null and return early on non-draft as draft always first", async () => {
     // With proper sorting, drafts always appear first
     // Add a draft for "other" branch, then a non-draft for "main"
-    octomock.addRelease({ id: 3, name: "v1.0.2", target_commitish: "other", draft: true })
-    octomock.addRelease({ id: 4, name: "v1.0.3", target_commitish: "main", draft: false })
+    octomock.stageRelease({ id: 3, name: "v1.0.2", target_commitish: "other", draft: true })
+    octomock.stageRelease({ id: 4, name: "v1.0.3", target_commitish: "main", draft: false })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLastDraft("main")
@@ -369,18 +369,18 @@ describe("findLastDraft", () => {
     // 1. First release is draft but for "other" branch (doesn't match)
     // 2. Second release is non-draft, so we stop searching (drafts come first)
     expect(release).toBeNull()
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 
   it("should return null if no draft release found for the commitish", async () => {
-    octomock.addRelease({ id: 2, name: "v1.0.2", target_commitish: "other", draft: true })
-    octomock.addRelease({ id: 3, name: "v1.0.3", target_commitish: "main", draft: false })
+    octomock.stageRelease({ id: 2, name: "v1.0.2", target_commitish: "other", draft: true })
+    octomock.stageRelease({ id: 3, name: "v1.0.3", target_commitish: "main", draft: false })
 
     const releases = fetchReleases(context, 30)
     const release = await releases.findLastDraft("main")
 
     expect(release).toBeNull()
-    expect(octomock.mockListReleases).toHaveBeenCalledTimes(1)
+    expect(octomock.listReleases).toHaveBeenCalledTimes(1)
   })
 })
 

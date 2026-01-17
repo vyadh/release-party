@@ -23,31 +23,31 @@ describe("fetchPullRequests", () => {
     const prs = await collectPullRequests(context, inclusiveMergedSince)
 
     expect(prs).toHaveLength(0)
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should fetch single page of pull requests", async () => {
-    octomock.addPullRequests(10)
+    octomock.stagePullRequests(10)
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 100)
 
     expect(prs).toHaveLength(10)
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should handle a single PR", async () => {
-    octomock.addPullRequest({ number: 1, title: "PR 1", mergeCommit: { oid: "def456" } })
+    octomock.stagePullRequest({ number: 1, title: "PR 1", mergeCommit: { oid: "def456" } })
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 100)
 
     expect(prs).toHaveLength(1)
     expect(prs[0].number).toBe(1)
     expect(prs[0].oid).toBe("def456")
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should not fetch next page when not enough PRs are consumed", async () => {
-    octomock.addPullRequests(30)
+    octomock.stagePullRequests(30)
 
     let count = 0
     for await (const _ of fetchPullRequests(context, inclusiveMergedSince, 100)) {
@@ -58,20 +58,20 @@ describe("fetchPullRequests", () => {
     }
 
     expect(count).toBe(10)
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should fetch next page when all PRs from current page are consumed", async () => {
-    octomock.addPullRequests(50)
+    octomock.stagePullRequests(50)
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 30)
 
     expect(prs).toHaveLength(50)
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(2)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(2)
   })
 
   it("should map PR fields correctly", async () => {
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       title: "Fix bug in feature X",
       number: 42,
       baseRefName: "main",
@@ -100,7 +100,7 @@ describe("fetchPullRequests", () => {
       "Rate limit exceeded"
     )
 
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should handle branch not found", async () => {
@@ -112,11 +112,11 @@ describe("fetchPullRequests", () => {
       collectPullRequests({ ...context, branch: "nonexistent-branch" }, inclusiveMergedSince)
     ).rejects.toThrow("Could not resolve to a Ref")
 
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should yield PRs lazily", async () => {
-    octomock.addPullRequests(200)
+    octomock.stagePullRequests(200)
 
     let count = 0
     for await (const pr of fetchPullRequests(context, inclusiveMergedSince, 100)) {
@@ -129,31 +129,31 @@ describe("fetchPullRequests", () => {
 
     expect(count).toBe(50)
     // Should only have fetched one page since we stopped at 50 PRs
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should include PRs merged at or after mergedSince date", async () => {
     const mergedSince = new Date("2026-01-05T00:00:00Z")
     // Add in reverse chronological order (newest first) to match GitHub API
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 1,
       title: "PR 1",
       mergedAt: "2026-01-10T00:00:00Z",
       mergeCommit: { oid: "commit_1" }
     })
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 2,
       title: "PR 2",
       mergedAt: "2026-01-05T00:00:00Z",
       mergeCommit: { oid: "commit_2" }
     })
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 3,
       title: "PR 3",
       mergedAt: "2026-01-06T12:00:00Z",
       mergeCommit: { oid: "commit_3" }
     })
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 4,
       title: "PR 5",
       mergedAt: "2026-01-04T12:00:00Z",
@@ -166,31 +166,31 @@ describe("fetchPullRequests", () => {
     expect(prs[0].number).toBe(1)
     expect(prs[1].number).toBe(2)
     expect(prs[2].number).toBe(3)
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
   it("should stop paging when first PR before mergedSince date is found", async () => {
     const mergedSince = new Date("2026-01-05T00:00:00Z")
     // Add in reverse chronological order (newest first)
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 1,
       title: "PR 1",
       mergedAt: "2026-01-10T00:00:00Z",
       mergeCommit: { oid: "commit_1" }
     })
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 2,
       title: "PR 2",
       mergedAt: "2026-01-06T00:00:00Z",
       mergeCommit: { oid: "commit_2" }
     })
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 3,
       title: "PR 3",
       mergedAt: "2026-01-04T00:00:00Z",
       mergeCommit: { oid: "commit_3" }
     }) // Before cutoff
-    octomock.addPullRequest({
+    octomock.stagePullRequest({
       number: 4,
       title: "PR 4",
       mergedAt: "2026-01-03T00:00:00Z",
@@ -204,7 +204,7 @@ describe("fetchPullRequests", () => {
     expect(prs[0].number).toBe(1)
     expect(prs[1].number).toBe(2)
     // Should only fetch first page since we stopped early
-    expect(octomock.mockGraphQL).toHaveBeenCalledTimes(1)
+    expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 })
 

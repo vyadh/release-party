@@ -20,7 +20,7 @@ describe("createDraftRelease", () => {
   it("should create a draft release with correct parameters", async () => {
     const release = await createDraftRelease(context, "v1.0.0", "main", "Version 1.0.0")
 
-    expect(octomock.mockCreateRelease).toHaveBeenCalledWith({
+    expect(octomock.createRelease).toHaveBeenCalledWith({
       owner: "test-owner",
       repo: "test-repo",
       tag_name: "v1.0.0",
@@ -88,7 +88,7 @@ describe("updateRelease", () => {
   })
 
   it("should update release parameters", async () => {
-    const existingRelease = octomock.addRelease({
+    const existingRelease = octomock.stageRelease({
       id: 789,
       tag_name: "v3.0.0",
       target_commitish: "main",
@@ -111,7 +111,7 @@ describe("updateRelease", () => {
 
     const release = await updateRelease(context, inputRelease)
 
-    expect(octomock.mockUpdateRelease).toHaveBeenCalledWith({
+    expect(octomock.updateRelease).toHaveBeenCalledWith({
       owner: "test-owner",
       repo: "test-repo",
       release_id: existingRelease.id,
@@ -130,7 +130,7 @@ describe("updateRelease", () => {
   })
 
   it("should update a draft release to published", async () => {
-    const existingRelease = octomock.addRelease({
+    const existingRelease = octomock.stageRelease({
       id: 123,
       tag_name: "v1.0.0",
       target_commitish: "main",
@@ -153,7 +153,7 @@ describe("updateRelease", () => {
 
     const release = await updateRelease(context, inputRelease)
 
-    expect(octomock.mockUpdateRelease).toHaveBeenCalledWith({
+    expect(octomock.updateRelease).toHaveBeenCalledWith({
       owner: "test-owner",
       repo: "test-repo",
       release_id: existingRelease.id,
@@ -173,7 +173,7 @@ describe("updateRelease", () => {
   })
 
   it("should not include published_at in the request", async () => {
-    const existingRelease = octomock.addRelease({
+    const existingRelease = octomock.stageRelease({
       id: 300,
       tag_name: "v5.0.0",
       target_commitish: "main",
@@ -196,7 +196,7 @@ describe("updateRelease", () => {
 
     await updateRelease(context, inputRelease)
 
-    const callArgs = octomock.mockUpdateRelease.mock.calls[0][0]
+    const callArgs = octomock.updateRelease.mock.calls[0][0]
     expect(callArgs).not.toHaveProperty("published_at")
   })
 

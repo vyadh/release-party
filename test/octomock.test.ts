@@ -21,8 +21,8 @@ describe("Octomock", () => {
 
   describe("releases", () => {
     it("should list releases added to state", async () => {
-      octomock.addRelease({ tag_name: "v1.0.0", name: "Release 1.0.0" })
-      octomock.addRelease({ tag_name: "v1.1.0", name: "Release 1.1.0" })
+      octomock.stageRelease({ tag_name: "v1.0.0", name: "Release 1.0.0" })
+      octomock.stageRelease({ tag_name: "v1.1.0", name: "Release 1.1.0" })
 
       const releases = await collectReleases(context)
 
@@ -35,7 +35,7 @@ describe("Octomock", () => {
     it("should handle pagination for releases", async () => {
       // Add 35 releases to test pagination (default page size is 30)
       for (let i = 0; i < 35; i++) {
-        octomock.addRelease({
+        octomock.stageRelease({
           id: i + 1,
           tag_name: `v1.${i}.0`,
           name: `Release ${i}`
@@ -45,7 +45,7 @@ describe("Octomock", () => {
       const releases = await collectReleases(context, 30)
 
       expect(releases).toHaveLength(35)
-      expect(octomock.mockListReleases).toHaveBeenCalledTimes(2) // Two pages
+      expect(octomock.listReleases).toHaveBeenCalledTimes(2) // Two pages
     })
 
     it("should create a draft release", async () => {
@@ -62,7 +62,7 @@ describe("Octomock", () => {
     })
 
     it("should update an existing release", async () => {
-      const existingRelease = octomock.addRelease({
+      const existingRelease = octomock.stageRelease({
         tag_name: "v1.0.0",
         name: "Old Name",
         draft: true
@@ -108,7 +108,7 @@ describe("Octomock", () => {
     })
 
     it("should inject updateRelease error", async () => {
-      const existingRelease = octomock.addRelease()
+      const existingRelease = octomock.stageRelease()
 
       octomock.injectUpdateReleaseError({
         message: "Forbidden",
@@ -132,12 +132,12 @@ describe("Octomock", () => {
 
   describe("pull requests", () => {
     it("should list pull requests added to state", async () => {
-      octomock.addPullRequest({
+      octomock.stagePullRequest({
         title: "feat: add feature",
         number: 1,
         baseRefName: "main"
       })
-      octomock.addPullRequest({
+      octomock.stagePullRequest({
         title: "fix: bug fix",
         number: 2,
         baseRefName: "main"
@@ -153,7 +153,7 @@ describe("Octomock", () => {
     it("should handle pagination for pull requests", async () => {
       // Add 35 PRs to test pagination (default page size is 30)
       for (let i = 0; i < 35; i++) {
-        octomock.addPullRequest({
+        octomock.stagePullRequest({
           number: i + 1,
           title: `PR ${i + 1}`
         })
@@ -162,21 +162,21 @@ describe("Octomock", () => {
       const prs = await collectPullRequests(context, null, 30)
 
       expect(prs).toHaveLength(35)
-      expect(octomock.mockGraphQL).toHaveBeenCalledTimes(2) // Two pages
+      expect(octomock.graphQL).toHaveBeenCalledTimes(2) // Two pages
     })
 
     it("should filter PRs by mergedSince date", async () => {
-      octomock.addPullRequest({
+      octomock.stagePullRequest({
         number: 1,
         title: "PR 1",
         mergedAt: "2026-01-10T00:00:00Z"
       })
-      octomock.addPullRequest({
+      octomock.stagePullRequest({
         number: 2,
         title: "PR 2",
         mergedAt: "2026-01-05T00:00:00Z"
       })
-      octomock.addPullRequest({
+      octomock.stagePullRequest({
         number: 3,
         title: "PR 3",
         mergedAt: "2026-01-04T00:00:00Z"
@@ -214,13 +214,13 @@ describe("Octomock", () => {
 
     it("should support finding the last draft release", async () => {
       // Releases are automatically sorted with drafts first
-      octomock.addRelease({
+      octomock.stageRelease({
         tag_name: "v0.9.0",
         target_commitish: "main",
         draft: false,
         name: "Published Release"
       })
-      octomock.addRelease({
+      octomock.stageRelease({
         tag_name: "v1.0.0",
         target_commitish: "main",
         draft: true,
@@ -236,13 +236,13 @@ describe("Octomock", () => {
     })
 
     it("should support finding the last published release", async () => {
-      octomock.addRelease({
+      octomock.stageRelease({
         tag_name: "v1.1.0",
         target_commitish: "main",
         draft: true,
         name: "Draft"
       })
-      octomock.addRelease({
+      octomock.stageRelease({
         tag_name: "v1.0.0",
         target_commitish: "main",
         draft: false,
@@ -261,18 +261,18 @@ describe("Octomock", () => {
 
   describe("batch operations", () => {
     it("should add multiple releases with default values", async () => {
-      const releases = octomock.addReleases(5)
+      const releases = octomock.stageReleases(5)
 
       expect(releases).toHaveLength(5)
       expect(releases[0].id).toBe(1)
       expect(releases[4].id).toBe(5)
-      
+
       const allReleases = await collectReleases(context)
       expect(allReleases).toHaveLength(5)
     })
 
     it("should add multiple releases with custom function", async () => {
-      const releases = octomock.addReleases(3, (i) => ({
+      const releases = octomock.stageReleases(3, (i) => ({
         tag_name: `v2.${i}.0`,
         name: `Custom Release ${i}`,
         draft: i === 0 // First one is draft
@@ -287,18 +287,18 @@ describe("Octomock", () => {
     })
 
     it("should add multiple pull requests with default values", async () => {
-      const prs = octomock.addPullRequests(5)
+      const prs = octomock.stagePullRequests(5)
 
       expect(prs).toHaveLength(5)
       expect(prs[0].number).toBe(1)
       expect(prs[4].number).toBe(5)
-      
+
       const allPrs = await collectPullRequests(context, null)
       expect(allPrs).toHaveLength(5)
     })
 
     it("should add multiple pull requests with custom function", async () => {
-      const prs = octomock.addPullRequests(3, (i) => ({
+      const prs = octomock.stagePullRequests(3, (i) => ({
         number: i + 10,
         title: `Custom PR ${i}`,
         mergedAt: `2026-01-${10 + i}T00:00:00Z`
@@ -309,26 +309,6 @@ describe("Octomock", () => {
       expect(prs[0].title).toBe("Custom PR 0")
       expect(prs[1].number).toBe(11)
       expect(prs[2].mergedAt).toBe("2026-01-12T00:00:00Z")
-    })
-  })
-
-  describe("error clearing", () => {
-    it("should clear all errors", async () => {
-      octomock.injectListReleasesError({ message: "Error" })
-      octomock.injectCreateReleaseError({ message: "Error" })
-      octomock.injectUpdateReleaseError({ message: "Error" })
-      octomock.injectGraphQLError({ message: "Error" })
-
-      octomock.clearErrors()
-
-      // Should not throw errors now
-      octomock.addRelease({ tag_name: "v1.0.0" })
-      const releases = await collectReleases(context)
-      expect(releases).toHaveLength(1)
-
-      octomock.addPullRequest({ title: "Test PR" })
-      const prs = await collectPullRequests(context, null)
-      expect(prs).toHaveLength(1)
     })
   })
 })
@@ -343,10 +323,6 @@ async function collectReleases(context: Context, perPage?: number) {
   return result
 }
 
-async function collectPullRequests(
-  context: Context,
-  mergedSince: Date | null,
-  perPage?: number
-) {
+async function collectPullRequests(context: Context, mergedSince: Date | null, perPage?: number) {
   return fetchPullRequests(context, mergedSince, perPage).collect()
 }

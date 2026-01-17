@@ -52,31 +52,31 @@ export class Octomock {
   private listReleasesError: ErrorConfig | null = null
   private createReleaseError: ErrorConfig | null = null
   private updateReleaseError: ErrorConfig | null = null
-  private graphqlError: ErrorConfig | null = null
+  private graphQlError: ErrorConfig | null = null
 
   readonly octokit: Octokit
-  readonly mockGraphQL: ReturnType<typeof vi.fn>
-  readonly mockListReleases: ReturnType<typeof vi.fn>
-  readonly mockCreateRelease: ReturnType<typeof vi.fn>
-  readonly mockUpdateRelease: ReturnType<typeof vi.fn>
+  readonly graphQL: ReturnType<typeof vi.fn>
+  readonly listReleases: ReturnType<typeof vi.fn>
+  readonly createRelease: ReturnType<typeof vi.fn>
+  readonly updateRelease: ReturnType<typeof vi.fn>
 
   constructor() {
     this.octokit = new Octokit({ auth: "test-token" })
 
     // Setup GraphQL mock
-    this.mockGraphQL = vi.fn()
-    this.mockGraphQL.mockImplementation((query: string, params: any) => {
-      if (this.graphqlError) {
-        return Promise.reject(this.createError(this.graphqlError))
+    this.graphQL = vi.fn()
+    this.graphQL.mockImplementation((query: string, params: any) => {
+      if (this.graphQlError) {
+        return Promise.reject(this.createError(this.graphQlError))
       }
       return this.handleGraphQLQuery(query, params)
     })
-    this.octokit.graphql = this.mockGraphQL as any
+    this.octokit.graphql = this.graphQL as any
 
     // Setup REST API mocks
-    this.mockListReleases = vi.fn()
-    this.mockCreateRelease = vi.fn()
-    this.mockUpdateRelease = vi.fn()
+    this.listReleases = vi.fn()
+    this.createRelease = vi.fn()
+    this.updateRelease = vi.fn()
 
     // Mock paginate.iterator for releases
     this.octokit.paginate = {
@@ -94,7 +94,7 @@ export class Octomock {
         return Promise.reject(this.createError(this.createReleaseError))
       }
       // @ts-ignore
-      return this.mockCreateRelease(params)
+      return this.createRelease(params)
     }) as typeof this.octokit.rest.repos.createRelease
 
     mockCreateReleaseFunction.endpoint = vi
@@ -107,7 +107,7 @@ export class Octomock {
         }
       })
 
-    this.mockCreateRelease.mockImplementation((params: CreateReleaseParams) => {
+    this.createRelease.mockImplementation((params: CreateReleaseParams) => {
       const releaseId = this.nextReleaseId++
       const shouldPublish = !params.draft
       const newRelease: GitHubRelease = {
@@ -137,7 +137,7 @@ export class Octomock {
         return Promise.reject(this.createError(this.updateReleaseError))
       }
       // @ts-ignore
-      return this.mockUpdateRelease(params)
+      return this.updateRelease(params)
     }) as typeof this.octokit.rest.repos.updateRelease
 
     mockUpdateReleaseFunction.endpoint = vi
@@ -150,7 +150,7 @@ export class Octomock {
         }
       })
 
-    this.mockUpdateRelease.mockImplementation((params: UpdateReleaseParams) => {
+    this.updateRelease.mockImplementation((params: UpdateReleaseParams) => {
       const releaseIndex = this.releases.findIndex((r) => r.id === params.release_id)
       if (releaseIndex === -1) {
         return Promise.reject(
@@ -193,9 +193,8 @@ export class Octomock {
 
   /**
    * Add a release to the internal state
-   * todo stageRelease
    */
-  addRelease(overrides: Partial<GitHubRelease> = {}): GitHubRelease {
+  stageRelease(overrides: Partial<GitHubRelease> = {}): GitHubRelease {
     const releaseId = this.nextReleaseId++
     const shouldPublish = !overrides.draft
     const release: GitHubRelease = {
@@ -218,11 +217,11 @@ export class Octomock {
    * @param count Number of releases to add
    * @param fn Optional function to customize each release based on its index (0-based)
    */
-  addReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[] {
+  stageReleases(count: number, fn?: (index: number) => Partial<GitHubRelease>): GitHubRelease[] {
     const releases: GitHubRelease[] = []
     for (let i = 0; i < count; i++) {
       const overrides = fn ? fn(i) : {}
-      releases.push(this.addRelease(overrides))
+      releases.push(this.stageRelease(overrides))
     }
     return releases
   }
@@ -230,7 +229,7 @@ export class Octomock {
   /**
    * Add a pull request to the internal state
    */
-  addPullRequest(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
+  stagePullRequest(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
     const pr: GitHubPullRequest = {
       title: `PR ${this.nextPullRequestNumber}`,
       number: this.nextPullRequestNumber++,
@@ -251,14 +250,14 @@ export class Octomock {
    * @param count Number of pull requests to add
    * @param fn Optional function to customize each PR based on its index (0-based)
    */
-  addPullRequests(
+  stagePullRequests(
     count: number,
     fn?: (index: number) => Partial<GitHubPullRequest>
   ): GitHubPullRequest[] {
     const prs: GitHubPullRequest[] = []
     for (let i = 0; i < count; i++) {
       const overrides = fn ? fn(i) : {}
-      prs.push(this.addPullRequest(overrides))
+      prs.push(this.stagePullRequest(overrides))
     }
     return prs
   }
@@ -288,17 +287,7 @@ export class Octomock {
    * Inject an error for the next GraphQL call
    */
   injectGraphQLError(error: ErrorConfig): void {
-    this.graphqlError = error
-  }
-
-  /**
-   * Clear all error injections
-   */
-  clearErrors(): void {
-    this.listReleasesError = null
-    this.createReleaseError = null
-    this.updateReleaseError = null
-    this.graphqlError = null
+    this.graphQlError = error
   }
 
   /**
@@ -344,7 +333,7 @@ export class Octomock {
       while (true) {
         // Track the call attempt for test assertions
         // @ts-ignore
-        self.mockListReleases({
+        self.listReleases({
           owner: params.owner,
           repo: params.repo,
           per_page: perPage,

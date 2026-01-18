@@ -1,6 +1,6 @@
 import * as os from "node:os"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import * as command from "../../src/github/command"
+import * as command from "../../src/actions-core/command"
 
 let originalWriteFunction: (str: string) => boolean
 

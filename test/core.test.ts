@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import type { Context } from "../src/context"
 import { upsertDraftRelease } from "../src/core"
-import { Octomock } from "./octomock"
+import { Octomock } from "./octomock/octomock"
 
 describe("upsertDraftRelease", () => {
   let octomock: Octomock

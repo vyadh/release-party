@@ -1,0 +1,21 @@
+name: Release Pending
+description: GitHub Action for versioned releases 📦
+author: Kieron Wilkinson
+
+branding:
+  icon: package
+  color: black
+
+inputs:
+  question:
+    description: Ask Deep Thought
+    required: true
+    default: What do you get if you multiply six by nine?
+
+outputs:
+  answer:
+    description: The answer provided by Deep Thought's successor (Earth)
+
+runs:
+  using: node24
+  main: dist/index.js

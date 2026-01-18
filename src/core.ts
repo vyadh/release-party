@@ -2,8 +2,8 @@ import type { Context } from "./context.js"
 import { fetchPullRequests } from "./data/pull-requests"
 import { createDraftRelease, type Release, updateRelease } from "./data/release"
 import { fetchReleases } from "./data/releases"
-import { inferImpactFromPRs } from "./version-bump-inference.js"
-import { bumpTag, type VersionIncrement } from "./versions.js"
+import { inferImpactFromPRs } from "./versioning/version-bump-inference"
+import { bumpTag, type VersionIncrement } from "./versioning/versions"
 
 // todo need to re-generate release notes
 // todo also need a version that just infers the next tag for running on feature branches

@@ -1,5 +1,5 @@
+import type { PullRequest } from "../data/pull-requests"
 import { maxImpact, messageImpact } from "./conventional-commits"
-import type { PullRequest } from "./data/pull-requests"
 import type { VersionIncrement } from "./versions"
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { bump, bumpTag } from "../src/versions"
+import { bump, bumpTag } from "../../src/versioning/versions"
 
 describe("bump", () => {
   it("should bump the major version", () => {

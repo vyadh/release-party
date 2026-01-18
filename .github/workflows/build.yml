@@ -46,3 +46,5 @@ jobs:
             echo "Error: dist/index.js should not be added to the repository manually"
             exit 1
           fi
+
+

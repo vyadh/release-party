@@ -1,5 +1,5 @@
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
-import type { Context } from "../context"
+import type { Context } from "@/context"
 
 /**
  * Represents a GitHub Release with the fields needed for the action

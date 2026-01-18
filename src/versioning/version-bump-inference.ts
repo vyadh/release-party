@@ -1,6 +1,6 @@
-import type { PullRequest } from "../data/pull-requests"
-import { maxImpact, messageImpact } from "./conventional-commits"
-import type { VersionIncrement } from "./versions"
+import type { PullRequest } from "@/data/pull-requests"
+import { maxImpact, messageImpact } from "@/versioning/conventional-commits"
+import type { VersionIncrement } from "@/versioning/versions"
 
 /**
  * Infers the maximum version impact from a set of pull requests.

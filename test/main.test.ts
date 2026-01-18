@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import * as core from "../src/actions-core/core"
-import { main } from "../src/main"
+import * as core from "@/actions-core/core"
+import { main } from "@/main"
 
 describe("main", () => {
   beforeEach(() => {

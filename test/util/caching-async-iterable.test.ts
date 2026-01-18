@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { CachingAsyncIterable } from "../../src/util/caching-async-iterable"
+import { CachingAsyncIterable } from "@/util/caching-async-iterable"
 
 describe("CachingAsyncIterable", () => {
   async function* createIncGenerator(count: number): AsyncGenerator<number> {

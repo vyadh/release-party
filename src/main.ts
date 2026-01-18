@@ -1,5 +1,5 @@
-// import { run } from "./cli"
-import { getInput, info, setFailed, setOutput } from "./actions-core/core"
+import { getInput, info, setFailed, setOutput } from "@/actions-core/core"
+// import { run } from "@/cli"
 
 export async function main(): Promise<void> {
   try {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import type { Context } from "../src/context"
-import { upsertDraftRelease } from "../src/core"
+import type { Context } from "@/context"
+import { upsertDraftRelease } from "@/core"
 import { Octomock } from "./octomock/octomock"
 
 describe("upsertDraftRelease", () => {

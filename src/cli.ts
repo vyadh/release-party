@@ -1,9 +1,9 @@
 import type { Octokit } from "octokit"
-import type { Context } from "./context"
-import { upsertDraftRelease } from "./core"
-import { createOctokit } from "./octokit-factory"
-import { fetchPullRequests } from "./data/pull-requests"
-import { fetchReleases } from "./data/releases"
+import type { Context } from "@/context"
+import { upsertDraftRelease } from "@/core"
+import { fetchPullRequests } from "@/data/pull-requests"
+import { fetchReleases } from "@/data/releases"
+import { createOctokit } from "@/octokit-factory"
 
 await run()
 

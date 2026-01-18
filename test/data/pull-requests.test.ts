@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import type { Context } from "../../src/context"
-import type { PullRequest } from "../../src/data/pull-requests"
-import { fetchPullRequests } from "../../src/data/pull-requests"
+import type { Context } from "@/context"
+import type { PullRequest } from "@/data/pull-requests"
+import { fetchPullRequests } from "@/data/pull-requests"
 import { Octomock } from "../octomock/octomock"
 
 describe("fetchPullRequests", () => {

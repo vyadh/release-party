@@ -1,7 +1,7 @@
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
-import type { Context } from "../context"
-import { CachingAsyncIterable } from "../util/caching-async-iterable"
-import type { Release } from "./release"
+import type { Context } from "@/context"
+import type { Release } from "@/data/release"
+import { CachingAsyncIterable } from "@/util/caching-async-iterable"
 
 const DEFAULT_PER_PAGE = 30
 const MAX_PAGES = 5

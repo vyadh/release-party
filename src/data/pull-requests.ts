@@ -1,4 +1,4 @@
-import type { Context } from "../context"
+import type { Context } from "@/context"
 
 const DEFAULT_PER_PAGE = 30
 

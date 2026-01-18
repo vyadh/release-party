@@ -27,7 +27,7 @@ A simplified, type-safe mocking utility for Octokit in tests. Octomock maintains
 
 ```typescript
 import { Octomock } from "./octomock"
-import { Context } from "../src/context"
+import { Context } from "@/context"
 
 describe("My Test Suite", () => {
   let octomock: Octomock

@@ -13,9 +13,9 @@
  */
 
 import * as os from "node:os"
-import { issue, issueCommand } from "./command"
-import { issueFileCommand, prepareKeyValueMessage } from "./file-command"
-import { type DataItem, toCommandProperties, toCommandValue } from "./utils"
+import { issue, issueCommand } from "@/actions-core/command"
+import { issueFileCommand, prepareKeyValueMessage } from "@/actions-core/file-command"
+import { type DataItem, toCommandProperties, toCommandValue } from "@/actions-core/utils"
 
 /**
  * Interface for getInput options

@@ -3,7 +3,7 @@
  */
 
 import * as os from "node:os"
-import { type DataItem, toCommandValue } from "./utils"
+import { type DataItem, toCommandValue } from "@/actions-core/utils"
 
 export interface CommandProperties {
   [key: string]: DataItem

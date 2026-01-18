@@ -19,7 +19,7 @@ The `CachingAsyncIterable` class solves a common problem with async generators a
 ### Basic Example
 
 ```typescript
-import { CachingAsyncIterable } from './src/caching-async-iterable'
+import { CachingAsyncIterable } from '@/util/caching-async-iterable'
 
 async function* generateNumbers() {
   for (let i = 0; i < 10; i++) {

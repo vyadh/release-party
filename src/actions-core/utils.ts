@@ -2,8 +2,8 @@
  * GitHub related functions. See comment in `core.ts`.
  */
 
-import type { CommandProperties } from "./command"
-import type { AnnotationProperties } from "./core"
+import type { CommandProperties } from "@/actions-core/command"
+import type { AnnotationProperties } from "@/actions-core/core"
 
 export type DataItem = null | undefined | string | boolean | number
 

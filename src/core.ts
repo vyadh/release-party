@@ -1,7 +1,7 @@
 import type { Context } from "./context.js"
-import { fetchPullRequests } from "./pull-requests.js"
-import { createDraftRelease, type Release, updateRelease } from "./release.js"
-import { fetchReleases } from "./releases.js"
+import { fetchPullRequests } from "./data/pull-requests"
+import { createDraftRelease, type Release, updateRelease } from "./data/release"
+import { fetchReleases } from "./data/releases"
 import { inferImpactFromPRs } from "./version-bump-inference.js"
 import { bumpTag, type VersionIncrement } from "./versions.js"
 

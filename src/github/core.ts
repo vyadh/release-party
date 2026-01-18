@@ -1,17 +1,21 @@
 /**
  * GitHub related functions.
  *
- * This avoids use of `@actions/core`, which massively increases (quadruples) the bundle size
- * despite only needing a few simple functions.
+ * This avoids use of `@actions/core`, which massively increases (~300 KiB to 1.2 MiB) the bundle size
+ * despite only needing a few simple functions. We should revert to the official package once
+ * this has been fixed:
+ * - https://github.com/actions/toolkit/issues/1560
+ * - https://github.com/actions/toolkit/issues/1893
+ * - https://github.com/actions/toolkit/issues/1959
  *
  * This largely copies what we need from, which is under the same MIT licence:
- * https://github.com/actions/toolkit/blob/main/packages/core/src/core.ts
+ * https://github.com/actions/toolkit/blob/main/packages/core/src
  */
 
-import * as os from "os"
+import * as os from "node:os"
 import { issue, issueCommand } from "./command"
 import { issueFileCommand, prepareKeyValueMessage } from "./file-command"
-import { toCommandProperties, toCommandValue } from "./utils"
+import { type DataItem, toCommandProperties, toCommandValue } from "./utils"
 
 /**
  * Interface for getInput options
@@ -91,7 +95,7 @@ export interface AnnotationProperties {
  */
 export function getInput(name: string, options?: InputOptions): string {
   const val: string = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || ""
-  if (options && options.required && !val) {
+  if (options?.required && !val) {
     throw new Error(`Input required and not supplied: ${name}`)
   }
 
@@ -130,11 +134,10 @@ export function getBooleanInput(name: string, options?: InputOptions): boolean {
  * @param     name     name of the output to set
  * @param     value    value to store. Non-string values will be converted to a string via JSON.stringify
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function setOutput(name: string, value: any): void {
-  const filePath = process.env["GITHUB_OUTPUT"] || ""
+export function setOutput(name: string, value: DataItem): void {
+  const filePath = process.env.GITHUB_OUTPUT || ""
   if (filePath) {
-    return issueFileCommand("OUTPUT", prepareKeyValueMessage(name, value))
+    issueFileCommand("OUTPUT", prepareKeyValueMessage(name, value))
   }
 
   process.stdout.write(os.EOL)
@@ -173,7 +176,7 @@ export function setFailed(message: string | Error): void {
  * Gets whether Actions Step Debug is on or not
  */
 export function isDebug(): boolean {
-  return process.env["RUNNER_DEBUG"] === "1"
+  return process.env.RUNNER_DEBUG === "1"
 }
 
 /**

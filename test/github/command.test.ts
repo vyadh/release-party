@@ -1,4 +1,4 @@
-import * as os from "os"
+import * as os from "node:os"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as command from "../../src/github/command"
 

@@ -1,18 +1,12 @@
 /**
- * GitHub related functions.
- *
- * This avoids use of `@actions/core`, which massively increases (quadruples) the bundle size
- * despite only needing a few simple functions.
- *
- * This largely copies what we need from, which is under the same MIT licence:
- * https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts
+ * GitHub related functions. See comment in `core.ts`.
  */
 
-import * as os from "os"
-import { toCommandValue } from "./utils"
+import * as os from "node:os"
+import { type DataItem, toCommandValue } from "./utils"
 
 export interface CommandProperties {
-  [key: string]: any
+  [key: string]: DataItem
 }
 
 /**
@@ -48,7 +42,7 @@ export interface CommandProperties {
  * This is an internal utility function that powers the public API functions
  * such as setSecret, warning, error, and exportVariable.
  */
-export function issueCommand(command: string, properties: CommandProperties, message: any): void {
+export function issueCommand(command: string, properties: CommandProperties, message: string): void {
   const cmd = new Command(command, properties, message)
   process.stdout.write(cmd.toString() + os.EOL)
 }
@@ -101,11 +95,11 @@ class Command {
   }
 }
 
-function escapeData(s: any): string {
+function escapeData(s: DataItem): string {
   return toCommandValue(s).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A")
 }
 
-function escapeProperty(s: any): string {
+function escapeProperty(s: DataItem): string {
   return toCommandValue(s)
     .replace(/%/g, "%25")
     .replace(/\r/g, "%0D")

@@ -1,7 +1,6 @@
-import { HttpClient } from "@actions/http-client"
-import * as fs from "fs"
-import * as os from "os"
-import * as path from "path"
+import * as fs from "node:fs"
+import * as os from "node:os"
+import * as path from "node:path"
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as core from "../../src/github/core"
 import { toCommandProperties } from "../../src/github/utils"
@@ -366,15 +365,15 @@ describe("@actions/core", () => {
   })
 
   it("isDebug check debug state", () => {
-    const current = process.env["RUNNER_DEBUG"]
+    const current = process.env.RUNNER_DEBUG
     try {
       delete process.env.RUNNER_DEBUG
       expect(core.isDebug()).toBe(false)
 
-      process.env["RUNNER_DEBUG"] = "1"
+      process.env.RUNNER_DEBUG = "1"
       expect(core.isDebug()).toBe(true)
     } finally {
-      process.env["RUNNER_DEBUG"] = current
+      process.env.RUNNER_DEBUG = current
     }
   })
 
@@ -415,20 +414,3 @@ function verifyFileCommand(command: string, expectedContents: string): void {
     fs.unlinkSync(filePath)
   }
 }
-
-function getTokenEndPoint(): string {
-  return "https://vstoken.actions.githubusercontent.com/.well-known/openid-configuration"
-}
-
-describe("oidc-client-tests", () => {
-  it("Get Http Client", async () => {
-    const http = new HttpClient("actions/oidc-client")
-    expect(http).toBeDefined()
-  })
-
-  it("HTTP get request to get token endpoint", async () => {
-    const http = new HttpClient("actions/oidc-client")
-    const res = await http.get(getTokenEndPoint())
-    expect(res.message.statusCode).toBe(200)
-  })
-})

@@ -9,8 +9,8 @@
     "package": "npm run build",
     "format": "biome check --write",
     "type-check": "tsc --noEmit",
-    "lint": "biome check",
-    "lint-ci": "biome ci --reporter=github",
+    "lint": "biome check --error-on-warnings",
+    "lint-ci": "biome ci --error-on-warnings --reporter=github",
     "test": "vitest run",
     "test:watch": "vitest"
   },

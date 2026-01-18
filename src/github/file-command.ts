@@ -1,22 +1,13 @@
 /**
- * GitHub related functions.
- *
- * This avoids use of `@actions/core`, which massively increases (quadruples) the bundle size
- * despite only needing a few simple functions.
- *
- * This largely copies what we need from, which is under the same MIT licence:
- * https://github.com/actions/toolkit/blob/main/packages/core/src/file-command.ts
+ * GitHub related functions. See comment in `core.ts`.
  */
 
-// We use any as a valid input type
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import * as crypto from "node:crypto"
+import * as fs from "node:fs"
+import * as os from "node:os"
+import { type DataItem, toCommandValue } from "./utils"
 
-import * as crypto from "crypto"
-import * as fs from "fs"
-import * as os from "os"
-import { toCommandValue } from "./utils"
-
-export function issueFileCommand(command: string, message: any): void {
+export function issueFileCommand(command: string, message: DataItem): void {
   const filePath = process.env[`GITHUB_${command}`]
   if (!filePath) {
     throw new Error(`Unable to find environment variable for file command ${command}`)
@@ -30,7 +21,7 @@ export function issueFileCommand(command: string, message: any): void {
   })
 }
 
-export function prepareKeyValueMessage(key: string, value: any): string {
+export function prepareKeyValueMessage(key: string, value: DataItem): string {
   const delimiter = `ghadelimiter_${crypto.randomUUID()}`
   const convertedValue = toCommandValue(value)
 

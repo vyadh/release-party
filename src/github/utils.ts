@@ -1,27 +1,20 @@
 /**
- * GitHub related functions.
- *
- * This avoids use of `@actions/core`, which massively increases (quadruples) the bundle size
- * despite only needing a few simple functions.
- *
- * This largely copies what we need from, which is under the same MIT licence:
- * https://github.com/actions/toolkit/blob/main/packages/core/src/utils.ts
+ * GitHub related functions. See comment in `core.ts`.
  */
-
-// We use any as a valid input type
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { CommandProperties } from "./command"
 import type { AnnotationProperties } from "./core"
+
+export type DataItem = null | undefined | string | boolean | number
 
 /**
  * Sanitizes an input into a string so it can be passed into issueCommand safely
  * @param input input to sanitize into a string
  */
-export function toCommandValue(input: any): string {
+export function toCommandValue(input: DataItem): string {
   if (input === null || input === undefined) {
     return ""
-  } else if (typeof input === "string" || input instanceof String) {
+  } else if (typeof input === "string") {
     return input as string
   }
   return JSON.stringify(input)

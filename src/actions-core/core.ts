@@ -138,6 +138,7 @@ export function setOutput(name: string, value: DataItem): void {
   const filePath = process.env.GITHUB_OUTPUT || ""
   if (filePath) {
     issueFileCommand("OUTPUT", prepareKeyValueMessage(name, value))
+    return
   }
 
   process.stdout.write(os.EOL)

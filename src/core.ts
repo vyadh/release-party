@@ -5,7 +5,6 @@ import { fetchReleases } from "@/data/releases"
 import { inferImpactFromPRs } from "@/versioning/version-bump-inference"
 import { bumpTag, type VersionIncrement } from "@/versioning/versions"
 
-// todo need to re-generate release notes
 // todo also need a version that just infers the next tag for running on feature branches
 
 export interface UpsertedReleaseResult {

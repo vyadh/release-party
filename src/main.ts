@@ -32,7 +32,10 @@ async function run() {
     info(`Next Version: ${result.version}`)
     info(`Updated Draft: ${result.release.name}\n${result.release.body}`)
 
-    setOutput("version", result.version)
+    if (result.lastRelease?.tagName) {
+      setOutput("last-version", result.lastRelease.tagName)
+    }
+    setOutput("next-version", result.version)
     setOutput("release-id", result.release.id)
   }
 }

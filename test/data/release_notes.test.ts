@@ -28,9 +28,7 @@ describe("generateReleaseNotes", () => {
       previous_tag_name: "v1.0.0"
     })
 
-    expect(notes).toEqual({
-      body: "## What's Changed\n\n* Changes from v1.0.0 to v2.0.0\n* Target: main"
-    })
+    expect(notes).toBe("## What's Changed\n\n* Changes from v1.0.0 to v2.0.0\n* Target: main")
   })
 
   it("should generate release notes without previous_tag_name when previousTagName is null", async () => {
@@ -43,8 +41,6 @@ describe("generateReleaseNotes", () => {
       target_commitish: "main"
     })
 
-    expect(notes).toEqual({
-      body: "## What's Changed\n\n* Changes for v2.0.0\n* Target: main"
-    })
+    expect(notes).toBe("## What's Changed\n\n* Changes for v2.0.0\n* Target: main")
   })
 })

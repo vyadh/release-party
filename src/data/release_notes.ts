@@ -1,6 +1,7 @@
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 import type { Context } from "@/context"
 
-type ReleaseNotes = { body?: string }
+type ReleaseNotesRequest = RestEndpointMethodTypes["repos"]["generateReleaseNotes"]["parameters"]
 
 /**
  * Generates release notes content for a release using GitHub's auto-generated release notes.
@@ -9,27 +10,28 @@ type ReleaseNotes = { body?: string }
  * @param context The GitHub context containing octokit, owner, and repo
  * @param tagName The tag name for the release
  * @param targetCommitish The commitish value that will be the target for the release's tag
- * @param previousTagName The name of the previous tag to use as the starting point for the release notes.
- * If null, release notes will not be generated and indicate previous body of a release should be retained.
- * @returns An object matching the ReleaseNotes type.
+ * @param previousTagName The name of the previous tag to use as the starting point for the release
+ * notes. If no previous release (null), delegate implying last release to GitHub.
+ * @returns The generated release notes body as a string.
  */
 export async function generateReleaseNotes(
   context: Context,
   tagName: string,
   targetCommitish: string,
   previousTagName: string | null
-): Promise<ReleaseNotes> {
-  if (previousTagName === null) {
-    return {}
-  }
-
-  const response = await context.octokit.rest.repos.generateReleaseNotes({
+): Promise<string> {
+  const params: ReleaseNotesRequest = {
     owner: context.owner,
     repo: context.repo,
     tag_name: tagName,
-    target_commitish: targetCommitish,
-    previous_tag_name: previousTagName
-  })
+    target_commitish: targetCommitish
+  }
 
-  return { body: response.data.body }
+  if (previousTagName !== null) {
+    params.previous_tag_name = previousTagName
+  }
+
+  const response = await context.octokit.rest.repos.generateReleaseNotes(params)
+
+  return response.data.body
 }

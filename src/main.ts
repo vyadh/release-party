@@ -20,6 +20,7 @@ async function run() {
   const result = await upsertDraftRelease(context, defaultTag)
 
   info(`Action Taken: ${result.action}`)
+  setOutput("action", result.action)
 
   if (result.action === "none") {
     info("\nNo outstanding PRs found, so a draft release was neither created nor updated")
@@ -29,7 +30,6 @@ async function run() {
     info(`Next Version: ${result.version ?? "N/A"}`)
     info(`Release Id: ${result.release.id}`)
 
-    setOutput("action", result.action)
     if (result.version) {
       setOutput("version", result.version)
     }

@@ -106,11 +106,7 @@ describe("main", () => {
 
   it("does not output release-id when no release is present", async () => {
     vi.mocked(coreModule.upsertDraftRelease).mockResolvedValueOnce({
-      action: "none",
-      release: null,
-      version: null,
-      pullRequestCount: 0,
-      versionIncrement: "none"
+      action: "none"
     })
     vi.spyOn(core, "getInput").mockReturnValue("v0.1.0")
     vi.spyOn(core, "info").mockImplementation(() => {})
@@ -125,11 +121,7 @@ describe("main", () => {
 
   it("outputs message when action is none", async () => {
     vi.mocked(coreModule.upsertDraftRelease).mockResolvedValue({
-      action: "none",
-      release: null,
-      version: null,
-      pullRequestCount: 0,
-      versionIncrement: "none"
+      action: "none"
     })
     vi.spyOn(core, "getInput").mockReturnValue("v0.1.0")
     const info = vi.spyOn(core, "info").mockImplementation(() => {})

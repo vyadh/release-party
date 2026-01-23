@@ -10,10 +10,14 @@ import { bumpTag, type VersionIncrement } from "@/versioning/versions"
 
 export type NoUpdateResult = {
   action: "none"
+  lastDraft: Release | null
+  lastRelease: Release | null
 }
 export type UpsertedReleaseResult = {
   action: "created" | "updated"
-  pullRequestCount: number
+  lastDraft: Release | null
+  lastRelease: Release | null
+  pullRequestTitles: string[]
   versionIncrement: VersionIncrement
   version: string
   release: Release
@@ -46,7 +50,9 @@ export async function upsertDraftRelease(context: Context, defaultTag: string): 
 
   if (pullRequests.length === 0) {
     return {
-      action: "none"
+      action: "none",
+      lastRelease: lastRelease,
+      lastDraft: lastDraft
     }
   }
 
@@ -57,7 +63,9 @@ export async function upsertDraftRelease(context: Context, defaultTag: string): 
 
   return {
     action: action,
-    pullRequestCount: pullRequests.length,
+    lastDraft: lastDraft,
+    lastRelease: lastRelease,
+    pullRequestTitles: pullRequests.map((pr) => pr.title),
     versionIncrement: versionIncrement,
     version: nextVersion,
     release: release

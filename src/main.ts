@@ -25,16 +25,14 @@ async function run() {
   if (result.action === "none") {
     info("\nNo outstanding PRs found, so a draft release was neither created nor updated")
   } else {
-    info(`Pull Requests: ${result.pullRequestCount}`)
+    info(`Last Release: ${result.lastRelease?.name ?? "(none)"}`)
+    info(`Current Draft: ${result.lastDraft?.name ?? "(none)"}`)
+    info(`Pull Requests: \n${result.pullRequestTitles.map((pr) => `  ${pr}`).join("\n")}`)
     info(`Version Increment: ${result.versionIncrement}`)
-    info(`Next Version: ${result.version ?? "N/A"}`)
-    info(`Release Id: ${result.release.id}`)
+    info(`Next Version: ${result.version}`)
+    info(`Updated Draft: ${result.release.name}\n${result.release.body}`)
 
-    if (result.version) {
-      setOutput("version", result.version)
-    }
-    if (result.release) {
-      setOutput("release-id", result.release.id)
-    }
+    setOutput("version", result.version)
+    setOutput("release-id", result.release.id)
   }
 }

@@ -24,7 +24,9 @@ describe("upsertDraftRelease", () => {
       const result = await upsertDraftRelease(context, "v0.1.0")
 
       expect(result).toEqual({
-        action: "none"
+        action: "none",
+        lastDraft: null,
+        lastRelease: null
       })
       expect(octomock.createRelease).not.toHaveBeenCalled()
       expect(octomock.updateRelease).not.toHaveBeenCalled()
@@ -72,10 +74,12 @@ describe("upsertDraftRelease", () => {
       expect(result.action).toBe("created")
       if (result.action !== "none") {
         expect(result.version).toBe("v0.1.0")
-        expect(result.pullRequestCount).toBe(1)
+        expect(result.pullRequestTitles).toEqual(["feat: add new feature"])
         expect(result.versionIncrement).toBe("minor")
         expect(result.release).toBeDefined()
         expect(result.release.id).toBe(100)
+        expect(result.lastDraft).toBeNull()
+        expect(result.lastRelease).toBeNull()
       }
 
       expect(octomock.createRelease).toHaveBeenCalledWith({
@@ -121,6 +125,8 @@ describe("upsertDraftRelease", () => {
       if (result.action !== "none") {
         expect(result.version).toBe("v1.2.4")
         expect(result.versionIncrement).toBe("patch")
+        expect(result.pullRequestTitles).toEqual(["fix: correct bug"])
+        expect(result.lastRelease?.tagName).toBe("v1.2.3")
       }
       expect(octomock.createRelease).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -304,7 +310,7 @@ describe("upsertDraftRelease", () => {
       expect(result.action).toBe("updated")
       if (result.action !== "none") {
         expect(result.version).toBe("v1.1.0")
-        expect(result.pullRequestCount).toBe(3)
+        expect(result.pullRequestTitles).toHaveLength(3)
         expect(result.versionIncrement).toBe("minor")
       }
 
@@ -551,7 +557,7 @@ describe("upsertDraftRelease", () => {
       const result = await upsertDraftRelease(context, "v0.1.0")
 
       if (result.action !== "none") {
-        expect(result.pullRequestCount).toBe(3)
+        expect(result.pullRequestTitles).toHaveLength(3)
         expect(result.versionIncrement).toBe("minor")
       }
     })

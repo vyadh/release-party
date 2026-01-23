@@ -9244,13 +9244,18 @@ ${result.pullRequestTitles.map((pr) => `  ${pr}`).join("\n")}`);
     info(`Next Version: ${result.version}`);
     info(`Updated Draft: ${result.release.name}
 ${result.release.body}`);
-    setOutput("version", result.version);
+    if (result.lastRelease?.tagName) {
+      setOutput("last-version", result.lastRelease.tagName);
+    }
+    setOutput("next-version", result.version);
     setOutput("release-id", result.release.id);
   }
 }
 
 // src/index.ts
-await main();
+if (import.meta && import.meta.main) {
+  await main();
+}
 /*! Bundled license information:
 
 @octokit/request-error/dist-src/index.js:

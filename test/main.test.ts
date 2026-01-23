@@ -27,18 +27,27 @@ describe("main", () => {
     vi.mocked(coreModule.upsertDraftRelease).mockResolvedValue({
       action: "created",
       lastDraft: null,
-      lastRelease: null,
-      release: {
-        id: 123,
+      lastRelease: {
+        id: 122,
         name: "v1.0.0",
         tagName: "v1.0.0",
+        body: "Release notes",
+        draft: false,
+        prerelease: false,
+        targetCommitish: "main",
+        publishedAt: null
+      },
+      release: {
+        id: 123,
+        name: "v1.1.0",
+        tagName: "v1.1.0",
         body: "Release notes",
         draft: true,
         prerelease: false,
         targetCommitish: "main",
         publishedAt: null
       },
-      version: "v1.0.0",
+      version: "v1.1.0",
       pullRequestTitles: [
         "feat: feature 1",
         "feat: feature 2",
@@ -69,7 +78,8 @@ describe("main", () => {
       "v0.1.0"
     )
     expect(setOutput).toHaveBeenCalledWith("action", "created")
-    expect(setOutput).toHaveBeenCalledWith("version", "v1.0.0")
+    expect(setOutput).toHaveBeenCalledWith("last-version", "v1.0.0")
+    expect(setOutput).toHaveBeenCalledWith("next-version", "v1.1.0")
     expect(setOutput).toHaveBeenCalledWith("release-id", 123)
   })
 
@@ -104,12 +114,13 @@ describe("main", () => {
     await main()
 
     expect(info).toHaveBeenCalledWith("Action Taken: created")
-    expect(info).toHaveBeenCalledWith("Last Release: (none)")
+    expect(info).toHaveBeenCalledWith("Last Release: v1.0.0")
     expect(info).toHaveBeenCalledWith("Current Draft: (none)")
     expect(info).toHaveBeenCalledWith("Version Increment: minor")
-    expect(info).toHaveBeenCalledWith("Next Version: v1.0.0")
-    expect(info).toHaveBeenCalledWith(expect.stringContaining("Updated Draft: v1.0.0"))
-    expect(core.setOutput).toHaveBeenCalledWith("version", "v1.0.0")
+    expect(info).toHaveBeenCalledWith("Next Version: v1.1.0")
+    expect(info).toHaveBeenCalledWith(expect.stringContaining("Updated Draft: v1.1.0"))
+    expect(core.setOutput).toHaveBeenCalledWith("last-version", "v1.0.0")
+    expect(core.setOutput).toHaveBeenCalledWith("next-version", "v1.1.0")
     expect(core.setOutput).toHaveBeenCalledWith("release-id", 123)
   })
 

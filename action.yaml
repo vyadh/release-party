@@ -15,8 +15,10 @@ inputs:
 outputs:
   action:
     description: The action taken by the release process.
-  version:
-    description: The inferred or determined version for the release.
+  last-version:
+    description: If a previous release was found, this is its version.
+  next-version:
+    description: The inferred or determined new version for the release.
   release-id:
     description: The numeric identifier of the created or updated release.
 

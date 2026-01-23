@@ -20,11 +20,14 @@ jobs:
           ref: release
           fetch-depth: 0
 
-      - name: Merge main into release
+      - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git merge origin/main --no-edit || {
+
+      - name: Merge changes from main
+        run: |
+          git merge origin/main -m "chore: new release" || {
             echo "Merge conflict occurred while merging main into release branch."
             exit 1
           }
@@ -44,12 +47,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Push to release branch
+      - name: Commit and push release
         run: |
           git add --force dist/index.js
           if git diff --staged --quiet; then
-            echo "No changes to commit on release branch. Skipping."
+            echo "No changes. Skipping."
           else
-            git commit -m "ci: new release"
+            git commit --amend --no-edit
             git push origin release
           fi

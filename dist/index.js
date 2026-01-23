@@ -9173,22 +9173,22 @@ async function upsertDraftRelease(context, defaultTag) {
   const pullRequests = await fetchPullRequests(context, mergedSince).collect();
   if (pullRequests.length === 0) {
     return {
-      release: null,
       action: "none",
-      version: null,
-      pullRequestCount: 0,
-      versionIncrement: "none"
+      lastRelease,
+      lastDraft
     };
   }
   const versionIncrement = inferImpactFromPRs(pullRequests);
   const nextVersion = calculateNextVersion(lastRelease, versionIncrement, defaultTag);
   const { release, action } = await performUpsert(context, nextVersion, lastDraft, lastRelease);
   return {
-    release,
     action,
+    lastDraft,
+    lastRelease,
+    pullRequestTitles: pullRequests.map((pr) => pr.title),
+    versionIncrement,
     version: nextVersion,
-    pullRequestCount: pullRequests.length,
-    versionIncrement
+    release
   };
 }
 function calculateNextVersion(lastRelease, increment, defaultTag) {
@@ -9232,20 +9232,19 @@ async function run() {
   const context = createContext();
   const result = await upsertDraftRelease(context, defaultTag);
   info(`Action Taken: ${result.action}`);
-  info(`Pull Requests: ${result.pullRequestCount}`);
-  info(`Version Increment: ${result.versionIncrement}`);
-  info(`Next Version: ${result.version ?? "n/a"}`);
-  if (result.release) {
-    info(`Release Id: ${result.release.id}`);
-  }
+  setOutput("action", result.action);
   if (result.action === "none") {
     info("\nNo outstanding PRs found, so a draft release was neither created nor updated");
-  }
-  setOutput("action", result.action);
-  if (result.version) {
+  } else {
+    info(`Last Release: ${result.lastRelease?.name ?? "(none)"}`);
+    info(`Current Draft: ${result.lastDraft?.name ?? "(none)"}`);
+    info(`Pull Requests: 
+${result.pullRequestTitles.map((pr) => `  ${pr}`).join("\n")}`);
+    info(`Version Increment: ${result.versionIncrement}`);
+    info(`Next Version: ${result.version}`);
+    info(`Updated Draft: ${result.release.name}
+${result.release.body}`);
     setOutput("version", result.version);
-  }
-  if (result.release) {
     setOutput("release-id", result.release.id);
   }
 }

@@ -2,7 +2,7 @@ import type { Octokit } from "octokit"
 import { info } from "@/actions-core/core"
 import type { Context } from "@/context"
 import { upsertDraftRelease } from "@/core"
-import { fetchPullRequests } from "@/data/pull-requests"
+import {fetchPullRequests, FetchPullRequestsParams} from "@/data/pull-requests"
 import { fetchReleases } from "@/data/releases"
 import { createOctokit } from "@/octokit-factory"
 
@@ -88,22 +88,29 @@ async function showReleases(octokit: Octokit, args: string[]) {
 
 async function showPullRequests(octokit: Octokit, args: string[]) {
   if (args.length < 4) {
-    console.error("Usage: node dist/index.js pulls <owner> <repo> <branch> <mergedSince>")
+    console.error("Usage: node dist/index.js pulls <incoming|outgoing> <owner> <repo> <branch> [mergedSince]")
     process.exit(1)
   }
-  const [owner, repo, branch, mergedSinceString] = args
-  const mergedSince = new Date(mergedSinceString)
+  const [direction, owner, repo, branch, mergedSinceString] = args
+  const mergedSince = mergedSinceString ? new Date(mergedSinceString) : null
 
   try {
-    console.log(`Fetching pull requests for ${owner}/${repo}@${branch} after ${mergedSince.toISOString()}...`)
+    console.log(`Fetching pull requests for ${owner}/${repo}@${branch} after ${mergedSince?.toISOString()}...`)
     const context: Context = { octokit: octokit, owner: owner, repo: repo, branch: branch }
-    for await (const pr of fetchPullRequests(context, {
+
+    const operation: FetchPullRequestsParams = direction === "incoming" ? {
       type: "incoming",
       baseRefName: branch,
       mergedSince: mergedSince
-    })) {
+    } : {
+      type: "outgoing",
+      headRefName: branch
+    }
+
+    for await (const pr of fetchPullRequests(context, operation)) {
       console.log(pr)
     }
+
   } catch (error) {
     console.error("Error fetching pull requests:", error)
     process.exit(1)

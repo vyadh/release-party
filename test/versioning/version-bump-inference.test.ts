@@ -7,8 +7,8 @@ function createPR(number: number, title: string): PullRequest {
     title,
     number,
     baseRefName: "main",
-    mergedAt: new Date(),
-    oid: "abc123"
+    state: "MERGED",
+    mergedAt: new Date()
   }
 }
 

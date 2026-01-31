@@ -23,7 +23,8 @@ export interface GitHubPullRequest {
   title: string
   number: number
   baseRefName: string
-  mergedAt: string
+  state: string
+  mergedAt: string | null
   mergeCommit: {
     oid: string
   }
@@ -302,11 +303,13 @@ export class Octomock {
    * Add a pull request to the internal state
    */
   stagePullRequest(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
+    const state = overrides.state ?? "MERGED"
     const pr: GitHubPullRequest = {
       title: `PR ${this.nextPullRequestNumber}`,
       number: this.nextPullRequestNumber++,
       baseRefName: "main",
-      mergedAt: new Date().toISOString(),
+      state,
+      mergedAt: state === "MERGED" ? new Date().toISOString() : null,
       mergeCommit: {
         oid: `commit_${this.nextPullRequestNumber - 1}`
       },

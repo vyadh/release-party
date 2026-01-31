@@ -36,13 +36,12 @@ describe("fetchPullRequests", () => {
   })
 
   it("should handle a single PR", async () => {
-    octomock.stagePullRequest({ number: 1, title: "PR 1", mergeCommit: { oid: "def456" } })
+    octomock.stagePullRequest({ number: 1, title: "PR 1" })
 
     const prs = await collectPullRequests(context, inclusiveMergedSince, 100)
 
     expect(prs).toHaveLength(1)
     expect(prs[0].number).toBe(1)
-    expect(prs[0].oid).toBe("def456")
     expect(octomock.graphQL).toHaveBeenCalledTimes(1)
   })
 
@@ -75,8 +74,8 @@ describe("fetchPullRequests", () => {
       title: "Fix bug in feature X",
       number: 42,
       baseRefName: "main",
-      mergedAt: "2026-01-01T12:00:00Z",
-      mergeCommit: { oid: "abc123def456" }
+      state: "MERGED",
+      mergedAt: "2026-01-01T12:00:00Z"
     })
 
     const prs = await collectPullRequests(context, inclusiveMergedSince)
@@ -86,8 +85,29 @@ describe("fetchPullRequests", () => {
       title: "Fix bug in feature X",
       number: 42,
       baseRefName: "main",
-      mergedAt: new Date("2026-01-01T12:00:00Z"),
-      oid: "abc123def456"
+      state: "MERGED",
+      mergedAt: new Date("2026-01-01T12:00:00Z")
+    })
+  })
+
+  it("should map OPEN PR with null mergedAt correctly", async () => {
+    octomock.stagePullRequest({
+      title: "Work in progress",
+      number: 99,
+      baseRefName: "main",
+      state: "OPEN",
+      mergedAt: null
+    })
+
+    const prs = await collectPullRequests(context, inclusiveMergedSince)
+
+    expect(prs).toHaveLength(1)
+    expect(prs[0]).toEqual({
+      title: "Work in progress",
+      number: 99,
+      baseRefName: "main",
+      state: "OPEN",
+      mergedAt: null
     })
   })
 
@@ -136,26 +156,22 @@ describe("fetchPullRequests", () => {
     octomock.stagePullRequest({
       number: 1,
       title: "PR 1",
-      mergedAt: "2026-01-10T00:00:00Z",
-      mergeCommit: { oid: "commit_1" }
+      mergedAt: "2026-01-10T00:00:00Z"
     })
     octomock.stagePullRequest({
       number: 2,
       title: "PR 2",
-      mergedAt: "2026-01-05T00:00:00Z",
-      mergeCommit: { oid: "commit_2" }
+      mergedAt: "2026-01-05T00:00:00Z"
     })
     octomock.stagePullRequest({
       number: 3,
       title: "PR 3",
-      mergedAt: "2026-01-06T12:00:00Z",
-      mergeCommit: { oid: "commit_3" }
+      mergedAt: "2026-01-06T12:00:00Z"
     })
     octomock.stagePullRequest({
       number: 4,
       title: "PR 5",
-      mergedAt: "2026-01-04T12:00:00Z",
-      mergeCommit: { oid: "commit_4" }
+      mergedAt: "2026-01-04T12:00:00Z"
     })
 
     const prs = await collectPullRequests(context, mergedSince)
@@ -173,26 +189,22 @@ describe("fetchPullRequests", () => {
     octomock.stagePullRequest({
       number: 1,
       title: "PR 1",
-      mergedAt: "2026-01-10T00:00:00Z",
-      mergeCommit: { oid: "commit_1" }
+      mergedAt: "2026-01-10T00:00:00Z"
     })
     octomock.stagePullRequest({
       number: 2,
       title: "PR 2",
-      mergedAt: "2026-01-06T00:00:00Z",
-      mergeCommit: { oid: "commit_2" }
+      mergedAt: "2026-01-06T00:00:00Z"
     })
     octomock.stagePullRequest({
       number: 3,
       title: "PR 3",
-      mergedAt: "2026-01-04T00:00:00Z",
-      mergeCommit: { oid: "commit_3" }
+      mergedAt: "2026-01-04T00:00:00Z"
     }) // Before cutoff
     octomock.stagePullRequest({
       number: 4,
       title: "PR 4",
-      mergedAt: "2026-01-03T00:00:00Z",
-      mergeCommit: { oid: "commit_4" }
+      mergedAt: "2026-01-03T00:00:00Z"
     })
 
     const prs = await collectPullRequests(context, mergedSince, 3)
@@ -203,6 +215,40 @@ describe("fetchPullRequests", () => {
     expect(prs[1].number).toBe(2)
     // Should only fetch first page since we stopped early
     expect(octomock.graphQL).toHaveBeenCalledTimes(1)
+  })
+
+  it("should include OPEN PRs when filtering by mergedSince", async () => {
+    const mergedSince = new Date("2026-01-05T00:00:00Z")
+    // OPEN PRs have null mergedAt, so they should pass through the filter
+    octomock.stagePullRequest({
+      number: 1,
+      title: "PR 1",
+      state: "MERGED",
+      mergedAt: "2026-01-10T00:00:00Z"
+    })
+    octomock.stagePullRequest({
+      number: 2,
+      title: "PR 2",
+      state: "OPEN",
+      mergedAt: null
+    })
+    octomock.stagePullRequest({
+      number: 3,
+      title: "PR 3",
+      state: "MERGED",
+      mergedAt: "2026-01-06T00:00:00Z"
+    })
+
+    const prs = await collectPullRequests(context, mergedSince)
+
+    expect(prs).toHaveLength(3)
+    expect(prs[0].number).toBe(1)
+    expect(prs[0].state).toBe("MERGED")
+    expect(prs[1].number).toBe(2)
+    expect(prs[1].state).toBe("OPEN")
+    expect(prs[1].mergedAt).toBeNull()
+    expect(prs[2].number).toBe(3)
+    expect(prs[2].state).toBe("MERGED")
   })
 })
 

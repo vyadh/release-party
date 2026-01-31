@@ -9,8 +9,8 @@ export interface PullRequest {
   title: string
   number: number
   baseRefName: string
-  mergedAt: Date
-  oid: string
+  state: string
+  mergedAt: Date | null
 }
 
 /**
@@ -47,7 +47,7 @@ query(
   repository(owner: $owner, name: $repo) {
     pullRequests(
       baseRefName: $baseRefName
-      states: MERGED
+      states: [ MERGED, OPEN ]
       orderBy: { field: UPDATED_AT, direction: DESC }
       first: $perPage
       after: $cursor
@@ -60,10 +60,8 @@ query(
         title
         number
         baseRefName
+        state
         mergedAt
-        mergeCommit {
-          oid
-        }
       }
     }
   }
@@ -107,7 +105,7 @@ async function* createPullRequestsGenerator(
 
     for (const pr of pulls) {
       const pullRequest = mapPullRequest(pr)
-      if (mergedSince && pullRequest.mergedAt < mergedSince) {
+      if (pullRequest.mergedAt != null && mergedSince && pullRequest.mergedAt < mergedSince) {
         // PRs are ordered by UPDATED_AT DESC. We can infer that all subsequent PRs will have an
         // updated date same or greater than their merged date. Therefore, we can stop pagination
         // for PRs merged before our selected merge date.
@@ -143,8 +141,8 @@ interface PullRequestNode {
   title: string
   number: number
   baseRefName: string
+  state: string
   mergedAt: string
-  mergeCommit: { oid: string }
 }
 
 /**
@@ -155,8 +153,8 @@ function mapPullRequest(apiPR: PullRequestNode): PullRequest {
     title: apiPR.title,
     number: apiPR.number,
     baseRefName: apiPR.baseRefName,
-    mergedAt: new Date(apiPR.mergedAt),
-    oid: apiPR.mergeCommit.oid
+    state: apiPR.state,
+    mergedAt: apiPR.state === "MERGED" ? new Date(apiPR.mergedAt) : null
   }
 }
 

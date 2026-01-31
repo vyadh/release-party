@@ -50,9 +50,13 @@ export class PullRequests implements AsyncIterable<PullRequest> {
     }
   }
 
-  // todo not currently using limit
+  // todo not currently supplying limit
   async collect(limit?: number): Promise<PullRequest[]> {
     return collectAsync(this, limit)
+  }
+
+  async first(): Promise<PullRequest | null> {
+    return collectFirst(this)
   }
 }
 
@@ -63,7 +67,7 @@ query(
   $repo: String!
   $baseRefName: String
   $headRefName: String
-  $states: [PullRequestState!]!
+  $state: PullRequestState!
   $perPage: Int!
   $cursor: String
 ) {
@@ -71,7 +75,7 @@ query(
     pullRequests(
       baseRefName: $baseRefName
       headRefName: $headRefName
-      states: $states
+      states: [$state]
       orderBy: { field: UPDATED_AT, direction: DESC }
       first: $perPage
       after: $cursor
@@ -106,22 +110,23 @@ export function fetchPullRequests(context: Context, params: FetchPullRequestsPar
         context,
         params.baseRefName,
         null,
-        ["MERGED"],
+        "MERGED",
         params.mergedSince,
         params.perPage
       )
     )
+  } else { // outgoing
+    return new PullRequests(
+      createPullRequestsGenerator(context, null, params.headRefName, "OPEN", null, params.perPage)
+    )
   }
-  return new PullRequests(
-    createPullRequestsGenerator(context, null, params.headRefName, ["OPEN", "MERGED"], null, params.perPage)
-  )
 }
 
 async function* createPullRequestsGenerator(
   context: Context,
   baseRefName: string | null,
   headRefName: string | null,
-  states: string[],
+  state: string,
   mergedSince: Date | null,
   perPage?: number
 ): AsyncGenerator<PullRequest, void, undefined> {
@@ -136,7 +141,7 @@ async function* createPullRequestsGenerator(
         repo: context.repo,
         baseRefName: baseRefName,
         headRefName: headRefName,
-        states: states,
+        state: state,
         perPage: perPage ?? DEFAULT_PER_PAGE,
         cursor: cursor
       }
@@ -210,4 +215,11 @@ async function collectAsync<T>(source: AsyncIterable<T>, limit?: number): Promis
     }
   }
   return result
+}
+async function collectFirst<T>(source: AsyncIterable<T>): Promise<T | null> {
+  // noinspection LoopStatementThatDoesntLoopJS
+  for await (const item of source) {
+    return item
+  }
+  return null
 }

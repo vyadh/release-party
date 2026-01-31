@@ -46,7 +46,11 @@ export async function upsertDraftRelease(context: Context, defaultTag: string): 
   const lastRelease = await releases.findLast(context.branch)
 
   const mergedSince = lastRelease?.publishedAt ?? null
-  const pullRequests = await fetchPullRequests(context, mergedSince).collect()
+  const pullRequests = await fetchPullRequests(context, {
+    type: "incoming",
+    baseRefName: context.branch,
+    mergedSince
+  }).collect()
 
   if (pullRequests.length === 0) {
     return {

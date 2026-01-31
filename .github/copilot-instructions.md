@@ -5,9 +5,7 @@ When opening a new shell session, if a `devbox.json` file is detected in the cur
 
 # Style Guide
 
-Follow the style and patterns already used in this project for the implementation
-
-For example:
+Follow the style and patterns already used in this project for the implementation. For example:
 - If making changes to a `data` function, look at style of other source files such as `releases.ts` when using the REST API or `pull-requests.ts` for the GraphQL API.
 - When making changes to a `data` test, looks as other tests in this project, such as `releases.test.ts`.
 
@@ -31,3 +29,7 @@ The following commands should be run to validate code changes.
 ## Changes to GitHub Actions YAML
 
 - `actionlint --verbose`
+
+## All Changes
+
+Run all tests to ensure other code has been updated appropriately.

@@ -14,6 +14,27 @@ export interface PullRequest {
 }
 
 /**
+ * Parameters for fetching incoming pull requests (merged into a branch).
+ */
+export interface IncomingPullRequestsParams {
+  type: "incoming"
+  baseRefName: string
+  mergedSince: Date | null
+  perPage?: number
+}
+
+/**
+ * Parameters for fetching outgoing pull requests (opened from a branch).
+ */
+export interface OutgoingPullRequestsParams {
+  type: "outgoing"
+  headRefName: string
+  perPage?: number
+}
+
+export type FetchPullRequestsParams = IncomingPullRequestsParams | OutgoingPullRequestsParams
+
+/**
  * Represents a collection of GitHub Pull Requests.
  */
 export class PullRequests implements AsyncIterable<PullRequest> {
@@ -40,14 +61,17 @@ const pullRequestQuery = `
 query(
   $owner: String!
   $repo: String!
-  $baseRefName: String!
+  $baseRefName: String
+  $headRefName: String
+  $states: [PullRequestState!]!
   $perPage: Int!
   $cursor: String
 ) {
   repository(owner: $owner, name: $repo) {
     pullRequests(
       baseRefName: $baseRefName
-      states: [ MERGED, OPEN ]
+      headRefName: $headRefName
+      states: $states
       orderBy: { field: UPDATED_AT, direction: DESC }
       first: $perPage
       after: $cursor
@@ -71,17 +95,33 @@ query(
 /**
  * Fetch GitHub pull requests using GraphQL API with lazy pagination.
  * Only fetches more pages when needed.
+ *
+ * For incoming PRs (merged into a branch): fetches only MERGED PRs
+ * For outgoing PRs (opened from a branch): fetches both OPEN and MERGED PRs
  */
-export function fetchPullRequests(
-  context: Context,
-  mergedSince: Date | null,
-  perPage?: number
-): PullRequests {
-  return new PullRequests(createPullRequestsGenerator(context, mergedSince, perPage))
+export function fetchPullRequests(context: Context, params: FetchPullRequestsParams): PullRequests {
+  if (params.type === "incoming") {
+    return new PullRequests(
+      createPullRequestsGenerator(
+        context,
+        params.baseRefName,
+        null,
+        ["MERGED"],
+        params.mergedSince,
+        params.perPage
+      )
+    )
+  }
+  return new PullRequests(
+    createPullRequestsGenerator(context, null, params.headRefName, ["OPEN", "MERGED"], null, params.perPage)
+  )
 }
 
 async function* createPullRequestsGenerator(
   context: Context,
+  baseRefName: string | null,
+  headRefName: string | null,
+  states: string[],
   mergedSince: Date | null,
   perPage?: number
 ): AsyncGenerator<PullRequest, void, undefined> {
@@ -94,7 +134,9 @@ async function* createPullRequestsGenerator(
       {
         owner: context.owner,
         repo: context.repo,
-        baseRefName: context.branch,
+        baseRefName: baseRefName,
+        headRefName: headRefName,
+        states: states,
         perPage: perPage ?? DEFAULT_PER_PAGE,
         cursor
       }

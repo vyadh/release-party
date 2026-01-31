@@ -97,7 +97,11 @@ async function showPullRequests(octokit: Octokit, args: string[]) {
   try {
     console.log(`Fetching pull requests for ${owner}/${repo}@${branch} after ${mergedSince.toISOString()}...`)
     const context: Context = { octokit, owner, repo, branch }
-    for await (const pr of fetchPullRequests(context, mergedSince)) {
+    for await (const pr of fetchPullRequests(context, {
+      type: "incoming",
+      baseRefName: branch,
+      mergedSince
+    })) {
       console.log(pr)
     }
   } catch (error) {

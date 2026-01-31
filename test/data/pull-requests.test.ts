@@ -12,7 +12,7 @@ describe("fetchPullRequests with IncomingPullRequestsParams", () => {
   function createParams(overrides?: Partial<IncomingPullRequestsParams>): IncomingPullRequestsParams {
     return {
       type: "incoming",
-      baseRefName,
+      baseRefName: baseRefName,
       mergedSince: null, // No cutoff date by default
       ...overrides
     }
@@ -183,7 +183,7 @@ describe("fetchPullRequests with IncomingPullRequestsParams", () => {
       mergedAt: "2026-01-04T12:00:00Z"
     })
 
-    const prs = await fetchPullRequests(context, createParams({ mergedSince })).collect()
+    const prs = await fetchPullRequests(context, createParams({ mergedSince: mergedSince })).collect()
 
     expect(prs).toHaveLength(3)
     expect(prs[0].number).toBe(1)
@@ -216,7 +216,10 @@ describe("fetchPullRequests with IncomingPullRequestsParams", () => {
       mergedAt: "2026-01-03T00:00:00Z"
     })
 
-    const prs = await fetchPullRequests(context, createParams({ mergedSince, perPage: 3 })).collect()
+    const prs = await fetchPullRequests(
+      context,
+      createParams({ mergedSince: mergedSince, perPage: 3 })
+    ).collect()
 
     // Should only yield PRs 1 and 2, and stop when PR 3 (before cutoff) is encountered
     expect(prs).toHaveLength(2)
@@ -248,7 +251,7 @@ describe("fetchPullRequests with IncomingPullRequestsParams", () => {
       mergedAt: "2026-01-06T00:00:00Z"
     })
 
-    const prs = await fetchPullRequests(context, createParams({ mergedSince })).collect()
+    const prs = await fetchPullRequests(context, createParams({ mergedSince: mergedSince })).collect()
 
     expect(prs).toHaveLength(3)
     expect(prs[0].number).toBe(1)
@@ -269,7 +272,7 @@ describe("fetchPullRequests with OutgoingPullRequestsParams", () => {
   function createParams(overrides?: Partial<OutgoingPullRequestsParams>): OutgoingPullRequestsParams {
     return {
       type: "outgoing",
-      headRefName,
+      headRefName: headRefName,
       ...overrides
     }
   }

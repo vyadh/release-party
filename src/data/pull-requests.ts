@@ -138,7 +138,7 @@ async function* createPullRequestsGenerator(
         headRefName: headRefName,
         states: states,
         perPage: perPage ?? DEFAULT_PER_PAGE,
-        cursor
+        cursor: cursor
       }
     )
 

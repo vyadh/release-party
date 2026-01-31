@@ -49,7 +49,7 @@ export async function upsertDraftRelease(context: Context, defaultTag: string): 
   const pullRequests = await fetchPullRequests(context, {
     type: "incoming",
     baseRefName: context.branch,
-    mergedSince
+    mergedSince: mergedSince
   }).collect()
 
   if (pullRequests.length === 0) {
@@ -103,9 +103,9 @@ async function performUpsert(
       tagName: nextVersion,
       body: body
     })
-    return { release, action: "updated" }
+    return { release: release, action: "updated" }
   } else {
     const release = await createDraftRelease(context, nextVersion, context.branch, nextVersion)
-    return { release, action: "created" }
+    return { release: release, action: "created" }
   }
 }

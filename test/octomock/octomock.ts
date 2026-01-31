@@ -250,8 +250,8 @@ export class Octomock {
 
       return Promise.resolve({
         data: {
-          name,
-          body
+          name: name,
+          body: body
         },
         status: 200,
         headers: {}
@@ -308,7 +308,7 @@ export class Octomock {
       title: `PR ${this.nextPullRequestNumber}`,
       number: this.nextPullRequestNumber++,
       baseRefName: "main",
-      state,
+      state: state,
       mergedAt: state === "MERGED" ? new Date().toISOString() : null,
       mergeCommit: {
         oid: `commit_${this.nextPullRequestNumber - 1}`
@@ -416,7 +416,7 @@ export class Octomock {
         owner: params.owner,
         repo: params.repo,
         per_page: perPage,
-        page
+        page: page
       })
 
       // Check for error injection
@@ -484,8 +484,8 @@ export class Octomock {
         pullRequests: {
           nodes: pageData,
           pageInfo: {
-            hasNextPage,
-            endCursor
+            hasNextPage: hasNextPage,
+            endCursor: endCursor
           }
         }
       }

@@ -4,8 +4,8 @@ import { inferImpactFromPRs } from "@/versioning/version-bump-inference"
 
 function createPR(number: number, title: string): PullRequest {
   return {
-    title,
-    number,
+    title: title,
+    number: number,
     baseRefName: "main",
     state: "MERGED",
     mergedAt: new Date()

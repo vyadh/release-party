@@ -142,7 +142,7 @@ export function setOutput(name: string, value: DataItem): void {
   }
 
   process.stdout.write(os.EOL)
-  issueCommand("set-output", { name }, toCommandValue(value))
+  issueCommand("set-output", { name: name }, toCommandValue(value))
 }
 
 /**

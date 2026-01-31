@@ -49,7 +49,7 @@ async function simulate(octokit: Octokit, args: string[]) {
 
   console.log(`Simulating draft release for ${owner}/${repo}@${branch}...`)
 
-  const context: Context = { octokit, owner, repo, branch }
+  const context: Context = { octokit: octokit, owner: owner, repo: repo, branch: branch }
   const result = await upsertDraftRelease(context, defaultTag)
 
   if (result.action === "none") {
@@ -72,7 +72,7 @@ async function showReleases(octokit: Octokit, args: string[]) {
   const [owner, repo] = args
 
   try {
-    const context: Context = { octokit, owner, repo, branch: "placeholder" }
+    const context: Context = { octokit: octokit, owner: owner, repo: repo, branch: "placeholder" }
     const releases = fetchReleases(context)
 
     console.log(`Finding latest draft release...`)
@@ -96,11 +96,11 @@ async function showPullRequests(octokit: Octokit, args: string[]) {
 
   try {
     console.log(`Fetching pull requests for ${owner}/${repo}@${branch} after ${mergedSince.toISOString()}...`)
-    const context: Context = { octokit, owner, repo, branch }
+    const context: Context = { octokit: octokit, owner: owner, repo: repo, branch: branch }
     for await (const pr of fetchPullRequests(context, {
       type: "incoming",
       baseRefName: branch,
-      mergedSince
+      mergedSince: mergedSince
     })) {
       console.log(pr)
     }

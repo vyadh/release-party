@@ -25,7 +25,7 @@ export function createContext(): Context {
   const { owner, repo } = getRepositoryInfo()
   const branch = getBranch()
 
-  return { octokit, owner, repo, branch }
+  return { octokit: octokit, owner: owner, repo: repo, branch: branch }
 }
 
 function getGitHubToken(): string {
@@ -45,7 +45,7 @@ function getRepositoryInfo(): { owner: string; repo: string } {
   if (!owner || !repo) {
     throw new Error(`Invalid GITHUB_REPOSITORY format: ${repository}. Expected format: owner/repo`)
   }
-  return { owner, repo }
+  return { owner: owner, repo: repo }
 }
 
 function getBranch(): string {
